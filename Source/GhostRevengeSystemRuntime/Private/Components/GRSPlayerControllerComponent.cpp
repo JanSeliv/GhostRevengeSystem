@@ -190,7 +190,7 @@ void UGRSPlayerControllerComponent::BindInputActionsInContext(const UBmrInputMap
 	TArray<UInputAction*> InputActions;
 	UInputUtilsLibrary::GetAllActionsInContext(this, InInputContext, EInputActionInContextState::NotBound, /*out*/ InputActions);
 
-	// --- Bind input actions
+	// --- Bind input actions @todo @janseliv expose to generic binding
 	for (const UInputAction* InputActionIt : InputActions)
 	{
 		const UBmrInputAction* ActionIt = Cast<UBmrInputAction>(InputActionIt);
