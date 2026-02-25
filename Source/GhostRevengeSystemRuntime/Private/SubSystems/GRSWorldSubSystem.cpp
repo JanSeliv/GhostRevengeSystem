@@ -17,6 +17,7 @@
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // UE
+#include "GrsGameplayTags.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
@@ -39,9 +40,9 @@ UGRSWorldSubSystem& UGRSWorldSubSystem::Get()
 }
 
 // Returns this Subsystem, is checked and will crash if it can't be obtained
-UGRSWorldSubSystem& UGRSWorldSubSystem::Get(const UObject& WorldContextObject)
+UGRSWorldSubSystem& UGRSWorldSubSystem::Get(const UObject* WorldContextObject)
 {
-	const UWorld* World = GEngine->GetWorldFromContextObjectChecked(&WorldContextObject);
+	const UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	checkf(World, TEXT("%s: 'World' is null"), *FString(__FUNCTION__));
 	UGRSWorldSubSystem* ThisSubsystem = World->GetSubsystem<ThisClass>();
 	checkf(ThisSubsystem, TEXT("%s: 'ProgressionSubsystem' is null"), *FString(__FUNCTION__));
@@ -75,14 +76,18 @@ void UGRSWorldSubSystem::OnLocalPawnReady_Implementation(const FGameplayEventDat
 void UGRSWorldSubSystem::TryInit()
 {
 	// --- check if managers have characters and collisions spawned if not - broadcast, yes -> return
-	if (CharacterManagerComponent && CollisionMangerComponent)
+	if (IsReady())
 	{
-		if (OnInitialize.IsBound())
-		{
-			OnInitialize.Broadcast();
-			OnInitialize.Clear();
-		}
+		FGameplayEventData EventData;
+		EventData.EventTag = GrsGameplayTags::Event::GameFeaturePluginReady;
+		UBmrGameplayMessageSubsystem::BroadcastMessage(EventData);
 	}
+}
+
+// Checks if the system is ready to load
+bool UGRSWorldSubSystem::IsReady()
+{
+	return CharacterManagerComponent && CollisionMangerComponent;
 }
 
 // Clears all transient data created by this subsystem.
@@ -95,11 +100,6 @@ void UGRSWorldSubSystem::Deinitialize()
 // Cleanup used on unloading module to remove properties that should not be available by other objects.
 void UGRSWorldSubSystem::PerformCleanUp()
 {
-	if (OnInitialize.IsBound())
-	{
-		OnInitialize.Clear();
-	}
-
 	UMyPrimaryDataAsset::ResetDataAsset(DataAssetInternal);
 
 	UnregisterCharacterManagerComponent();

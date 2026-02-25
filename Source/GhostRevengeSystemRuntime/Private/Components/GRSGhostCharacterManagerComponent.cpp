@@ -4,6 +4,7 @@
 
 // GRS
 #include "Data/GRSDataAsset.h"
+#include "GrsGameplayTags.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "PoolManagerSubsystem.h"
 #include "SubSystems/GRSWorldSubSystem.h"
@@ -48,8 +49,9 @@ void UGRSGhostCharacterManagerComponent::BeginPlay()
 	Super::BeginPlay();
 
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
-	WorldSubsystem.OnInitialize.AddUniqueDynamic(this, &ThisClass::OnInitialize);
 	WorldSubsystem.RegisterCharacterManagerComponent(this);
+
+	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
 }
 
 // Clears all transient data created by this component.
@@ -86,7 +88,7 @@ void UGRSGhostCharacterManagerComponent::OnUnregister()
  **********************************************************************************************/
 
 // The component is considered as loaded only when the subsystem is loaded
-void UGRSGhostCharacterManagerComponent::OnInitialize()
+void UGRSGhostCharacterManagerComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
 	UE_LOG(LogTemp, Log, TEXT("UGRSGhostCharacterManagerComponent OnInitialize  --- %s"), *this->GetName());
 

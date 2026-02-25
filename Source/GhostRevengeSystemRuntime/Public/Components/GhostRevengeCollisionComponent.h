@@ -44,7 +44,7 @@ protected:
 
 	/** The spawner is considered as loaded only when the subsystem is loaded */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void OnInitialize();
+	void OnInitialize(const struct FGameplayEventData& Payload);
 
 	/** Spawn a collision box the side of the map */
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "[GhostRevengeSystem]")

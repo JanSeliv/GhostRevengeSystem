@@ -4,7 +4,6 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "GhostRevengeUtils.h"
 #include "Actors/BmrBombAbilityActor.h"
 #include "Actors/BmrPawn.h"
 #include "Animation/AnimInstance.h"
@@ -23,11 +22,14 @@
 #include "GameFramework/BmrGameState.h"
 #include "GameFramework/BmrPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GhostRevengeUtils.h"
+#include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSBombProjectile.h"
 #include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
+#include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UI/Widgets/BmrPlayerNameWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
@@ -67,7 +69,6 @@ void AGRSPlayerCharacter::SetPlayerName(const ABmrPawn* MainCharacter)
 
 	NickName->SetPlayerName(FText::FromString(SideName));
 }
-
 
 /*********************************************************************************************
  * Initialization
@@ -179,8 +180,22 @@ void AGRSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Log, TEXT("AGRSPlayerCharacter::OnInitialize ghost character  --- %s - %s"), *this->GetName(), this->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
-	UGRSWorldSubSystem::Get().RegisterGhostCharacter(this);
+	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
+	WorldSubsystem.RegisterGhostCharacter(this);
+	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
+}
 
+// Native actor is destroyed event
+void AGRSPlayerCharacter::Destroyed()
+{
+	Super::Destroyed();
+	RemoveActiveGameplayEffect();
+	PerformCleanUp();
+}
+
+// The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point
+void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
+{
 	GetMeshChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// --- Activate aiming point
@@ -205,13 +220,6 @@ void AGRSPlayerCharacter::BeginPlay()
 	{
 		OnRefreshGhostCharacters();
 	}
-}
-
-void AGRSPlayerCharacter::Destroyed()
-{
-	Super::Destroyed();
-	RemoveActiveGameplayEffect();
-	PerformCleanUp();
 }
 
 // Refresh ghost players required elements. Happens only when game is starting or active because requires to have all players (humans) to be connected
@@ -425,7 +433,7 @@ void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 //  Possess a player controller
 void AGRSPlayerCharacter::TryPossessController(AController* PlayerController)
 {
-	if (!PlayerController || !PlayerController->HasAuthority())
+	if (!PlayerController || !PlayerController->HasAuthority() || !IsPlayerControlled())
 	{
 		return;
 	}

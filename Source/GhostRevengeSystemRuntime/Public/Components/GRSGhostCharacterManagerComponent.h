@@ -74,7 +74,7 @@ protected:
 
 	/** The component is considered as loaded only when the subsystem is loaded */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void OnInitialize();
+	void OnInitialize(const struct FGameplayEventData& Payload);
 	
 	/** Add ghost character to the current active game (on level map) */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")

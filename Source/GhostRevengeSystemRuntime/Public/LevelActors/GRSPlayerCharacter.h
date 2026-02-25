@@ -118,10 +118,14 @@ public:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
 
-	/** Called when actor is destroyed */
+	/** Native actor is destroyed event */
 	virtual void Destroyed() override;
 
 protected:
+	/** The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void OnInitialize(const struct FGameplayEventData& Payload);
+
 	/** Refresh ghost players required elements. Happens only when game is starting or active because requires to have all players (humans) to be connected */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnRefreshGhostCharacters();

@@ -18,6 +18,8 @@
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
+#include "GrsGameplayTags.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GhostRevengeCollisionComponent)
@@ -70,13 +72,14 @@ void UGhostRevengeCollisionComponent::OnUnregister()
 void UGhostRevengeCollisionComponent::OnLocalPawnReady_Implementation(const FGameplayEventData& Payload)
 {
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
-	WorldSubsystem.OnInitialize.AddUniqueDynamic(this, &ThisClass::OnInitialize);
 	WorldSubsystem.RegisterCollisionManagerComponent(this);
 	WorldSubsystem.OnWorldSubSystemInitialize();
+
+	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
 }
 
 // The spawner is considered as loaded only when the subsystem is loaded
-void UGhostRevengeCollisionComponent::OnInitialize()
+void UGhostRevengeCollisionComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
 	if (!GetOwner()->HasAuthority())
 	{

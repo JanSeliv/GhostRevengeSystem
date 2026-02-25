@@ -26,11 +26,7 @@ public:
 
 	/** Returns this Subsystem, is checked and will crash if it can't be obtained.*/
 	static UGRSWorldSubSystem& Get();
-	static UGRSWorldSubSystem& Get(const UObject& WorldContextObject);
-
-	/* Delegate to inform that module is loaded. To have better loading control of the MGF  */
-	UPROPERTY(BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FGRSOnInitialize OnInitialize;
+	static UGRSWorldSubSystem& Get(const UObject* WorldContextObject);
 
 protected:
 	/** Begin play of the subsystem */
@@ -57,6 +53,10 @@ public:
 	/** Cleanup used on unloading module to remove properties that should not be available by other objects. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void PerformCleanUp();
+
+	/** Checks if the system is ready to load */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	bool IsReady();
 
 	/*********************************************************************************************
 	 * Data asset
@@ -173,3 +173,35 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
 };
+
+/** Helper macro for binding to GhostRevengeSystem is initialized.
+ * @param Obj Object that owns the callback function
+ * @param Function Callback function to bind (signature: void Function(const FGameplayEventData& Payload)) */
+#define BIND_ON_INITIALIZE(Obj, Function) \
+	INTERNAL_BIND_Initialize(GrsGameplayTags::Event::GameFeaturePluginReady, Obj, Function)
+
+/*********************************************************************************************
+ * Internal
+ ********************************************************************************************* */
+
+/** Internal Helper macro for binding to GhostRevengeSystem is ready. */
+#define INTERNAL_BIND_Initialize(InEventTag, Obj, Function)                       \
+	{                                                                             \
+		TWeakObjectPtr WeakObj(Obj);                                              \
+		UGameplayMessageSubsystem::Get(Obj).RegisterListener<FGameplayEventData>( \
+		    InEventTag,                                                           \
+		    [WeakObj](FGameplayTag, const FGameplayEventData& Payload)            \
+		{                                                                         \
+			auto* StrongObj = WeakObj.Get();                                      \
+			if (StrongObj && UGRSWorldSubSystem::Get(StrongObj).IsReady())        \
+			{                                                                     \
+				(StrongObj->*(&Function))(Payload);                               \
+			}                                                                     \
+		});                                                                       \
+		if (UGRSWorldSubSystem::Get(Obj).IsReady())                               \
+		{                                                                         \
+			FGameplayEventData AutoPayload;                                       \
+			AutoPayload.EventTag = InEventTag;                                    \
+			(Obj->*(&Function))(AutoPayload);                                     \
+		}                                                                         \
+	}
