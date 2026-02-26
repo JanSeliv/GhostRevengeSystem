@@ -433,7 +433,7 @@ void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 //  Possess a player controller
 void AGRSPlayerCharacter::TryPossessController(AController* PlayerController)
 {
-	if (!PlayerController || !PlayerController->HasAuthority() || !IsPlayerControlled())
+	if (!PlayerController || !PlayerController->HasAuthority())
 	{
 		return;
 	}
