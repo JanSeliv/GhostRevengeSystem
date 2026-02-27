@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Data/MyPrimaryDataAsset.h"
-#include "DataAssets/BmrInputMappingContext.h"
-#include "Kismet/GameplayStaticsTypes.h"
+#include "DalPrimaryDataAsset.h"
+
+// UE
+#include "GameplayTagContainer.h"
+#include "Kismet/GameplayStaticsTypes.h" // FPredictProjectilePathParams
 
 #include "GRSDataAsset.generated.h"
 
@@ -13,7 +14,7 @@
  * Contains all ghost revenge assets used in the module
  */
 UCLASS(Blueprintable, BlueprintType)
-class GHOSTREVENGESYSTEMRUNTIME_API UGRSDataAsset : public UMyPrimaryDataAsset
+class GHOSTREVENGESYSTEMRUNTIME_API UGRSDataAsset : public UDalPrimaryDataAsset
 {
 	GENERATED_BODY()
 

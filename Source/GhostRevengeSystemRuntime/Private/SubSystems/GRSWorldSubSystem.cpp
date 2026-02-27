@@ -3,12 +3,10 @@
 #include "SubSystems/GRSWorldSubSystem.h"
 
 // GRS
-#include "Data/GRSDataAsset.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 
 // Bmr
 #include "Actors/BmrPawn.h"
-#include "Data/MyPrimaryDataAsset.h"
 #include "GameFramework/BmrGameState.h"
 #include "MyUtilsLibraries/UtilsLibrary.h"
 #include "Structures/BmrGameplayTags.h"
@@ -100,21 +98,10 @@ void UGRSWorldSubSystem::Deinitialize()
 // Cleanup used on unloading module to remove properties that should not be available by other objects.
 void UGRSWorldSubSystem::PerformCleanUp()
 {
-	UMyPrimaryDataAsset::ResetDataAsset(DataAssetInternal);
-
 	UnregisterCharacterManagerComponent();
 	UnregisterCollisionManagerComponent();
 	ClearGhostCharacters();
 	ClearCollisions();
-}
-
-/*********************************************************************************************
- * Data asset
- **********************************************************************************************/
-// Returns the data asset that contains all the assets of Ghost Revenge System game feature
-const UGRSDataAsset* UGRSWorldSubSystem::GetGRSDataAsset() const
-{
-	return UMyPrimaryDataAsset::GetOrLoadOnce(DataAssetInternal);
 }
 
 /*********************************************************************************************

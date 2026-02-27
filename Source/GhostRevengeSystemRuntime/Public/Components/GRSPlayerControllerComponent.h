@@ -53,20 +53,16 @@ public:
 public:
 	UPROPERTY(VisibleInstanceOnly, Transient, Category = "[GhostRevengeSystem]")
 	float CurrentHoldTimeInternal = 0.0f;
-	
+
 	/** Enables or disable input context (enhanced input) depends on possession state. Called when possessed pawn changed */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn);
-	
+
 	/** Enables or disables the input context.
 	 * * @param bEnable - true to enable, false to disable */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void SetManagedInputContextEnabled(AController* PlayerController, bool bEnable);
-	
-	/** Set up input bindings in given contexts. */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void BindInputActionsInContext(const UBmrInputMappingContext* InInputContext);
-	
+
 	/** Move the player character. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, AutoCreateRefTerm = "ActionValue"))
 	void MovePlayer(const FInputActionValue& ActionValue);
