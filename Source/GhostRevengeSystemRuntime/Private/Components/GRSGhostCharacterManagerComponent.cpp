@@ -20,6 +20,7 @@
 #include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
+#include "DalSubsystem.h"
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
@@ -48,6 +49,12 @@ void UGRSGhostCharacterManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UDalSubsystem::Get().ListenForDataAsset<UGRSDataAsset>(this, &ThisClass::OnDataAssetLoaded);
+}
+
+// Called when the GRS data asset is loaded and available
+void UGRSGhostCharacterManagerComponent::OnDataAssetLoaded_Implementation(const UGRSDataAsset* DataAsset)
+{
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
 	WorldSubsystem.RegisterCharacterManagerComponent(this);
 

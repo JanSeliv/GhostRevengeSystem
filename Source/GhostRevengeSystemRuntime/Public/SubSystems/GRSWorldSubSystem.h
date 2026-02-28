@@ -12,7 +12,7 @@ enum class EGRSCharacterSide : uint8;
 /**
  * Implements the world subsystem to access different components in the module
  */
-UCLASS(BlueprintType, Blueprintable, Config = "GhostRevengeSystem", DefaultConfig)
+UCLASS(BlueprintType, Blueprintable)
 class GHOSTREVENGESYSTEMRUNTIME_API UGRSWorldSubSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
@@ -57,23 +57,6 @@ public:
 	/** Checks if the system is ready to load */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	bool IsReady();
-
-	/*********************************************************************************************
-	 * Data asset
-	 **********************************************************************************************/
-protected:
-	/** Contains all the assets and tweaks of Ghost Revenge System game feature.
-	 * Note: Since Subsystem is code-only, there is config property set in BaseGhostRevengeSystem.ini.
-	 * Property is put to subsystem because its instance is created before any other object.
-	 * It can't be put to DevelopSettings class because it does work properly for MGF-modules. */
-	UPROPERTY(Config, VisibleInstanceOnly, BlueprintReadWrite, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Ghost Revenge System Data Asset"))
-	TSoftObjectPtr<const class UGRSDataAsset> DataAssetInternal;
-
-public:
-	/** Returns the data asset that contains all the assets of Ghost Revenge System game feature.
-	 * @see UGRSWorldSubsystem::GRSDataAssetInternal. */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[GhostRevengeSystem]")
-	const class UGRSDataAsset* GetGRSDataAsset() const;
 
 	/*********************************************************************************************
 	 * Side Collisions actors

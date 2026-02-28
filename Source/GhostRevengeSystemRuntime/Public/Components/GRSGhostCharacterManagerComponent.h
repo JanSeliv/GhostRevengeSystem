@@ -72,6 +72,10 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Bound MapComponents"))
 	TArray<TWeakObjectPtr<class UBmrMapComponent>> BoundMapComponents;
 
+	/** Called when the GRS data asset is loaded and available */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void OnDataAssetLoaded(const class UGRSDataAsset* DataAsset);
+
 	/** The component is considered as loaded only when the subsystem is loaded */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnInitialize(const struct FGameplayEventData& Payload);

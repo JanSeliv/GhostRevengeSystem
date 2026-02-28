@@ -3,8 +3,10 @@
 #include "Components/GRSPlayerControllerComponent.h"
 
 #include "Controllers/BmrPlayerController.h"
+#include "DalSubsystem.h"
 #include "Data/GRSDataAsset.h"
 #include "DataAssets/BmrInputAction.h"
+#include "DataAssets/BmrInputMappingContext.h"
 #include "DataAssets/BmrPlayerInputDataAsset.h"
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
@@ -13,8 +15,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "MyUtilsLibraries/InputUtilsLibrary.h"
-#include "SubSystems/GRSWorldSubSystem.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
+
 /*********************************************************************************************
  * Lifecycle
  **********************************************************************************************/
@@ -71,17 +73,18 @@ void UGRSPlayerControllerComponent::OnUnregister()
 // Clean up the character for the MGF unload
 void UGRSPlayerControllerComponent::PerformCleanUp()
 {
-	ABmrPlayerController* PlayerController = Cast<ABmrPlayerController>(GetOwner());
+	const ABmrPlayerController* PlayerController = GetPlayerController();
 	if (!PlayerController)
 	{
 		return;
 	}
 
-	// Remove all previous input contexts managed by Controller
-	TArray<const UBmrInputMappingContext*> InputContexts;
-	const UBmrInputMappingContext* InputContext = UGRSDataAsset::Get().GetInputContext();
-	InputContexts.AddUnique(InputContext);
-	PlayerController->RemoveInputContexts(InputContexts);
+	if (const UGRSDataAsset* DataAsset = UDalSubsystem::GetDataAsset<UGRSDataAsset>())
+	{
+		const UBmrInputMappingContext* InputContext = DataAsset->GetInputContext();
+		UInputUtilsLibrary::UnbindInputActionsInContext(PlayerController, InputContext);
+		UInputUtilsLibrary::SetInputContextEnabled(PlayerController, false, InputContext);
+	}
 }
 
 /*********************************************************************************************
@@ -165,66 +168,8 @@ void UGRSPlayerControllerComponent::SetManagedInputContextEnabled(AController* P
 	{
 		if (InputContext)
 		{
-			BindInputActionsInContext(InputContext);
+			MyPlayerController->BindInputActionsInContext(InputContext);
 			UInputUtilsLibrary::SetInputContextEnabled(this, bEnable, InputContext, HighestContextPriority);
-		}
-	}
-}
-
-// Set up input bindings in given contexts
-void UGRSPlayerControllerComponent::BindInputActionsInContext(const UBmrInputMappingContext* InInputContext)
-{
-	if (!GetPlayerController()->CanBindInputActions())
-	{
-		// It could fail on starting the game, but since contexts are managed, it will be bound later anyway
-		return;
-	}
-
-	UEnhancedInputComponent* EnhancedInputComponent = UInputUtilsLibrary::GetEnhancedInputComponent(this);
-	if (!ensureMsgf(EnhancedInputComponent, TEXT("ASSERT: 'EnhancedInputComponent' is not valid")))
-	{
-		return;
-	}
-
-	// Obtains all input actions in given context that are not currently bound to the input component
-	TArray<UInputAction*> InputActions;
-	UInputUtilsLibrary::GetAllActionsInContext(this, InInputContext, EInputActionInContextState::NotBound, /*out*/ InputActions);
-
-	// --- Bind input actions @todo @janseliv expose to generic binding
-	for (const UInputAction* InputActionIt : InputActions)
-	{
-		const UBmrInputAction* ActionIt = Cast<UBmrInputAction>(InputActionIt);
-		if (!ActionIt)
-		{
-			continue;
-		}
-
-		for (int32 Index = 0; Index < ActionIt->GetInputActionBindingsNum(); ++Index)
-		{
-			const FBmrInputActionBinding CurrentBinding = ActionIt->GetInputActionBinding(Index);
-			const FName FunctionName = CurrentBinding.FunctionToBind.FunctionName;
-			if (!ensureAlwaysMsgf(!FunctionName.IsNone(), TEXT("ASSERT: %s: 'FunctionName' is none, can not bind the action '%s'!"), *FString(__FUNCTION__), *GetNameSafe(ActionIt)))
-			{
-				continue;
-			}
-
-			const FFunctionPicker& StaticContext = CurrentBinding.StaticContext;
-			if (!ensureAlwaysMsgf(StaticContext.IsValid(), TEXT("ASSERT: [%i] %s:\n'StaticContext' is not valid: %s, can not bind the action '%s'!"), __LINE__, *FString(__FUNCTION__), *StaticContext.ToDisplayString(), *GetNameSafe(ActionIt)))
-			{
-				continue;
-			}
-
-			UFunctionPickerTemplate::FOnGetterObject GetOwnerFunc;
-			GetOwnerFunc.BindUFunction(StaticContext.FunctionClass->GetDefaultObject(), StaticContext.FunctionName);
-			UObject* FoundContextObj = GetOwnerFunc.Execute(GetWorld());
-			if (!ensureAlwaysMsgf(FoundContextObj, TEXT("ASSERT: [%i] %s:\n'FoundContextObj' is not found, next function returns nullptr: %s, can not bind the action '%s'!"), __LINE__, *FString(__FUNCTION__), *StaticContext.ToDisplayString(), *GetNameSafe(ActionIt)))
-			{
-				continue;
-			}
-
-			const ETriggerEvent TriggerEvent = CurrentBinding.TriggerEvent;
-			EnhancedInputComponent->BindAction(ActionIt, TriggerEvent, FoundContextObj, FunctionName);
-			UE_LOG(LogTemp, Log, TEXT("GhostRevengeSystem Input bound: [%s][%s] %s()->%s()"), *GetNameSafe(InInputContext), *GetNameSafe(InputActionIt), *StaticContext.ToDisplayString(), *FunctionName.ToString());
 		}
 	}
 }

@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "DalSubsystem.h"
 #include "Data/GRSDataAsset.h"
 #include "Engine/CollisionProfile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -58,7 +59,14 @@ void AGRSBombProjectile::Launch(const FVector& LaunchVelocity)
 void AGRSBombProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	BombMesh->SetStaticMesh(UGRSDataAsset::Get().GetProjectileMesh());
+
+	UDalSubsystem::Get().ListenForDataAsset<UGRSDataAsset>(this, &ThisClass::OnDataAssetLoaded);
+}
+
+// Called when the GRS data asset is loaded and available
+void AGRSBombProjectile::OnDataAssetLoaded_Implementation(const UGRSDataAsset* DataAsset)
+{
+	BombMesh->SetStaticMesh(DataAsset->GetProjectileMesh());
 }
 
 void AGRSBombProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

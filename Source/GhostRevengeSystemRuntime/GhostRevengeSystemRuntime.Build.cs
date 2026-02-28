@@ -13,10 +13,12 @@ public class GhostRevengeSystemRuntime : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[]
 			{
-				"Core", "UMG", "EnhancedInput", "GameplayAbilities" // Created UBmrInputAction, UBmrInputMappingContext
+				"Core", "UMG",
+				"EnhancedInput" // Created UBmrInputAction, UBmrInputMappingContext
+				, "GameplayAbilities" // Created UGRSReviveAbility
 				// Bomber
-				,
-				"Bomber"
+				, "Bomber"
+				, "DataAssetsLoader" // Created UGRSDataAsset
 			}
 		);
 
@@ -24,15 +26,11 @@ public class GhostRevengeSystemRuntime : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 			{
 				"CoreUObject", "Engine", "Slate", "SlateCore" // core
-				,
-				"GameplayTags" // UE_DEFINE_GAMEPLAY_STATIC
-				,
-				"GameplayAbilities" // Tags
+				, "GameplayTags" // UE_DEFINE_GAMEPLAY_STATIC
+				, "GameplayAbilities" // Tags
 				// Bomber
-				,
-				"MyUtils", "PoolManager", "FunctionPicker" // spawn ghost character
-				,
-				"GameplayMessageRuntime" // BmrGameplayMessageSubsystem
+				, "MyUtils", "PoolManager", "FunctionPicker" // spawn ghost character
+				, "GameplayMessageRuntime" // BmrGameplayMessageSubsystem
 			}
 		);
 	}
