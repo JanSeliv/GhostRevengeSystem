@@ -167,24 +167,22 @@ protected:
  * Internal
  ********************************************************************************************* */
 
-/** Internal Helper macro for binding to GhostRevengeSystem is ready. */
-#define INTERNAL_BIND_Initialize(InEventTag, Obj, Function)                       \
-	{                                                                             \
-		TWeakObjectPtr WeakObj(Obj);                                              \
-		UGameplayMessageSubsystem::Get(Obj).RegisterListener<FGameplayEventData>( \
-		    InEventTag,                                                           \
-		    [WeakObj](FGameplayTag, const FGameplayEventData& Payload)            \
-		{                                                                         \
-			auto* StrongObj = WeakObj.Get();                                      \
-			if (StrongObj && UGRSWorldSubSystem::Get(StrongObj).IsReady())        \
-			{                                                                     \
-				(StrongObj->*(&Function))(Payload);                               \
-			}                                                                     \
-		});                                                                       \
-		if (UGRSWorldSubSystem::Get(Obj).IsReady())                               \
-		{                                                                         \
-			FGameplayEventData AutoPayload;                                       \
-			AutoPayload.EventTag = InEventTag;                                    \
-			(Obj->*(&Function))(AutoPayload);                                     \
-		}                                                                         \
+/** Internal Helper macro for binding to GhostRevengeSystem is ready via Async Message System (aka Lyra's Gameplay Message Router). */
+#define INTERNAL_BIND_Initialize(InEventTag, Obj, Function)                            \
+	{                                                                                  \
+		TWeakObjectPtr WeakObj(Obj);                                                   \
+		UBmrGameplayMessageSubsystem::RegisterListener(Obj, InEventTag,                \
+		    [WeakObj](const FGameplayEventData& Payload)                               \
+		{                                                                              \
+			if (WeakObj.IsValid() && UGRSWorldSubSystem::Get(WeakObj.Get()).IsReady()) \
+			{                                                                          \
+				(WeakObj.Get()->*(&Function))(Payload);                                \
+			}                                                                          \
+		});                                                                            \
+		if (UGRSWorldSubSystem::Get(Obj).IsReady())                                    \
+		{                                                                              \
+			FGameplayEventData AutoPayload;                                            \
+			AutoPayload.EventTag = InEventTag;                                         \
+			(Obj->*(&Function))(AutoPayload);                                          \
+		}                                                                              \
 	}
