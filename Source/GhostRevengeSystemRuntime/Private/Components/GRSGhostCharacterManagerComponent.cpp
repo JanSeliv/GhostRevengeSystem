@@ -11,24 +11,21 @@
 
 // Bmr
 #include "Actors/BmrGeneratedMap.h"
-#include "Bomber.h"
 #include "Components/BmrSkeletalMeshComponent.h"
 #include "Controllers/BmrPlayerController.h"
+#include "DalSubsystem.h"
 #include "GameFramework/BmrGameState.h"
-#include "GameFramework/BmrPlayerState.h"
 #include "Structures/BmrGameplayTags.h"
 #include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
-#include "DalSubsystem.h"
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Components/GrsPawnComponent.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerState.h"
-#include "Kismet/GameplayStatics.h"
 #include "Structures/BmrGameStateTag.h"
 
 /*********************************************************************************************
@@ -73,18 +70,10 @@ void UGRSGhostCharacterManagerComponent::OnUnregister()
 		UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
 	}
 
-	if (DeadPlayerCharacters.Num() > 0)
-	{
-		DeadPlayerCharacters.Empty();
-	}
-
 	// --- clean delegates
 	UnregisterFromPlayerDeath();
 
 	OnPlayerCharacterPreRemovedFromLevel.Clear();
-	OnActivateGhostCharacter.Clear();
-	OnRemoveGhostCharacterFromMap.Clear();
-	OnRefreshGhostCharacters.Clear();
 
 	// --- perform clean up from subsystem MGF is not possible so we have to call directly to clean cached references
 	UGRSWorldSubSystem::Get().UnregisterCharacterManagerComponent();
@@ -109,14 +98,6 @@ void UGRSGhostCharacterManagerComponent::OnInitialize(const struct FGameplayEven
 
 	// --- bind to  clear ghost data
 	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
-
-	// --- handle initiation of ghosts player if MGF loaded during start of the game or in active game
-	const ABmrGameState& GameState = ABmrGameState::Get();
-
-	if (GameState.HasMatchingGameplayTag(FBmrGameStateTag::GameStarting) || GameState.HasMatchingGameplayTag(FBmrGameStateTag::InGame))
-	{
-		RefreshGhostCharacters();
-	}
 }
 
 // Add ghost character to the current active game (on level map)
@@ -167,51 +148,46 @@ void UGRSGhostCharacterManagerComponent::OnTakeActorsFromPoolCompleted(const TAr
 // Subscribes to PlayerCharacters death events in order to see if a player died
 void UGRSGhostCharacterManagerComponent::RegisterForPlayerDeath()
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		return;
-	}
-
-	TArray<AActor*> PlayerCharactersInternal;
-
 	// --- subscribe to PlayerCharacters death event in order to see if a ghost player killed somebody
-	// --- to be refactored for more efficient approach
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABmrPawn::StaticClass(), PlayerCharactersInternal);
-
-	for (AActor* Actor : PlayerCharactersInternal)
+	TArray<UGrsPawnComponent*> GrsPawnComponents = UGRSWorldSubSystem::Get().GetPawnComponents();
+	for (UGrsPawnComponent* GrsPawnComponent : GrsPawnComponents)
 	{
-		const ABmrPawn* MyActor = Cast<ABmrPawn>(Actor);
-		if (MyActor)
+		ABmrPawn* MyPawn = &GrsPawnComponent->GetBmrPawnChecked();
+		if (MyPawn)
 		{
-			if (MyActor->IsBotControlled())
+			UBmrMapComponent* MapComponent = UBmrMapComponent::GetMapComponent(MyPawn);
+			if (!ensureMsgf(MapComponent, TEXT("ASSERT: [%i] %hs:\n 'MapComponent' is null!"), __LINE__, __FUNCTION__))
 			{
 				continue;
 			}
 
-			UBmrMapComponent* MapComponent = UBmrMapComponent::GetMapComponent(MyActor);
-			if (MapComponent)
-			{
-				MapComponent->OnPreRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::PlayerCharacterOnPreRemovedFromLevel);
-
-				BoundMapComponents.AddUnique(MapComponent);
-
-				// Actor has ASC: apply effect through GAS
-				const ABmrPawn* PlayerCharacter = MapComponent->GetOwner<ABmrPawn>();
-				if (PlayerCharacter)
-				{
-					UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PlayerCharacter);
-					if (!ensureMsgf(ASC, TEXT("ASSERT: [%i] %hs:\n 'ASC' is not set!"), __LINE__, __FUNCTION__))
-					{
-						return;
-					}
-					TSubclassOf<UGameplayEffect> PlayerReviveEffect = UGRSDataAsset::Get().GetPlayerReviveEffect();
-					if (ensureMsgf(PlayerReviveEffect, TEXT("ASSERT: [%i] %hs:\n'PlayerDeathEffect' is not set!"), __LINE__, __FUNCTION__))
-					{
-						ASC->ApplyGameplayEffectToSelf(PlayerReviveEffect.GetDefaultObject(), /*Level*/ 1.f, ASC->MakeEffectContext());
-					}
-				}
-			}
+			MapComponent->OnPreRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::PlayerCharacterOnPreRemovedFromLevel);
+			BoundMapComponents.AddUnique(MapComponent);
+			GrantPlayerReviveEffect(MyPawn);
 		}
+	}
+}
+
+//  Grant to a player revive GAS effect
+void UGRSGhostCharacterManagerComponent::GrantPlayerReviveEffect(ABmrPawn* PawnToGrant)
+{
+	if (!PawnToGrant
+	    || !GetOwner()->HasAuthority()
+	    || PawnToGrant->IsPlayerControlled())
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PawnToGrant);
+	if (!ensureMsgf(ASC, TEXT("ASSERT: [%i] %hs:\n 'ASC' is not set!"), __LINE__, __FUNCTION__))
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> PlayerReviveEffect = UGRSDataAsset::Get().GetPlayerReviveEffect();
+	if (ensureMsgf(PlayerReviveEffect, TEXT("ASSERT: [%i] %hs:\n'PlayerDeathEffect' is not set!"), __LINE__, __FUNCTION__))
+	{
+		ASC->ApplyGameplayEffectToSelf(PlayerReviveEffect.GetDefaultObject(), /*Level*/ 1.f, ASC->MakeEffectContext());
 	}
 }
 
@@ -222,28 +198,11 @@ void UGRSGhostCharacterManagerComponent::OnGameStateChanged_Implementation(const
 	{
 		// --- clean delegates
 		UnregisterFromPlayerDeath();
-
-		// -- release (unpossess) all ghosts
-		RemoveGhostCharacters();
 	}
 
 	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
 	{
-		if (GetOwner()->HasAuthority())
-		{
-			RegisterForPlayerDeath();
-		}
-
-		RefreshGhostCharacters();
-	}
-}
-
-// Refresh the ghost characters visuals
-void UGRSGhostCharacterManagerComponent::RefreshGhostCharacters() const
-{
-	if (OnRefreshGhostCharacters.IsBound())
-	{
-		OnRefreshGhostCharacters.Broadcast();
+		RegisterForPlayerDeath();
 	}
 }
 
@@ -263,60 +222,6 @@ void UGRSGhostCharacterManagerComponent::PlayerCharacterOnPreRemovedFromLevel_Im
 	{
 		OnPlayerCharacterPreRemovedFromLevel.Broadcast(MapComponent, DestroyCauser);
 	}
-
-	// --- allow to players to be revived as ghost only once per match
-	// --- check if a reference for that player character was stored, if yes - was eliminated once
-	for (const TPair<ABmrPawn*, AGRSPlayerCharacter*>& Pair : DeadPlayerCharacters)
-	{
-		if (Pair.Key == PlayerCharacter)
-		{
-			if (!Pair.Value)
-			{
-				return;
-			}
-		}
-	}
-
-	// --- handle 3rd player character death to perform swap
-	const ABmrPlayerState* DestroyCauserPlayerState = Cast<ABmrPlayerState>(DestroyCauser);
-	if (!DestroyCauserPlayerState)
-	{
-		return;
-	}
-
-	APawn* DestroyCauserPawn = DestroyCauserPlayerState->GetPawn();
-	if (!DestroyCauserPawn)
-	{
-		return;
-	}
-
-	AGRSPlayerCharacter* DestroyCauserGhostCharacter = Cast<AGRSPlayerCharacter>(DestroyCauserPawn);
-	if (DestroyCauserGhostCharacter && DeadPlayerCharacters.Num() > 1)
-	{
-		for (TPair<ABmrPawn*, AGRSPlayerCharacter*>& Pair : DeadPlayerCharacters)
-		{
-			if (Pair.Value == DestroyCauserGhostCharacter)
-			{
-				Pair.Value = nullptr;
-				if (OnActivateGhostCharacter.IsBound())
-				{
-					OnActivateGhostCharacter.Broadcast(DestroyCauserGhostCharacter, PlayerCharacter);
-				}
-				DeadPlayerCharacters.Add(PlayerCharacter, DestroyCauserGhostCharacter);
-				return;
-			}
-		}
-	}
-
-	AGRSPlayerCharacter* GhostToActive = UGRSWorldSubSystem::Get().GetAvailableGhostCharacter();
-	if (GhostToActive)
-	{
-		if (OnActivateGhostCharacter.IsBound())
-		{
-			OnActivateGhostCharacter.Broadcast(GhostToActive, PlayerCharacter);
-		}
-		DeadPlayerCharacters.Add(PlayerCharacter, GhostToActive);
-	}
 }
 
 // Called when the ghost player kills another player and will be swaped with him
@@ -335,20 +240,15 @@ void UGRSGhostCharacterManagerComponent::OnGhostRemovedFromLevel(AController* Cu
 		return;
 	}
 
-	ABmrPawn* PlayerCharacter = nullptr;
-
-	for (TPair<ABmrPawn*, AGRSPlayerCharacter*>& Pair : DeadPlayerCharacters)
+	ABmrPawn* PlayerCharacter = GhostCharacter->GetPossessedPlayerCharacter(GhostCharacter);
+	if (!PlayerCharacter)
 	{
-		if (Pair.Value == GhostCharacter)
-		{
-			PlayerCharacter = Pair.Key;
-			Pair.Value = nullptr;
-		}
+		return;
 	}
-
+	
 	// --- move all functional part such as posses to ability
 	// --- possess back to player character for any cases
-	PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	//PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	PossessPlayerCharacter(CurrentController, PlayerCharacter);
 	RevivePlayerCharacter(PlayerCharacter);
 }
@@ -407,23 +307,6 @@ void UGRSGhostCharacterManagerComponent::UnregisterFromPlayerDeath()
 
 		BoundMapComponents.Empty();
 	}
-}
-
-// Remove ghost characters from the map
-void UGRSGhostCharacterManagerComponent::RemoveGhostCharacters()
-{
-	for (const TPair<ABmrPawn*, AGRSPlayerCharacter*>& Pair : DeadPlayerCharacters)
-	{
-		if (Pair.Value)
-		{
-			if (OnRemoveGhostCharacterFromMap.IsBound())
-			{
-				OnRemoveGhostCharacterFromMap.Broadcast(Pair.Value);
-			}
-		}
-	}
-
-	DeadPlayerCharacters.Empty();
 }
 
 // To Remove current active applied gameplay effect

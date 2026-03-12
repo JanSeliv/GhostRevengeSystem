@@ -24,25 +24,10 @@ class GHOSTREVENGESYSTEMRUNTIME_API UGRSGhostCharacterManagerComponent : public 
 	 **********************************************************************************************/
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerCharacterPreRemovedFromLevel, UBmrMapComponent*, MapComponent, UObject*, DestroyCauser);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActivateGhostCharacter, AGRSPlayerCharacter*, GhostCharacter, const ABmrPawn*, PlayerCharacter);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemoveGhostCharacterFromMap, AGRSPlayerCharacter*, GhostCharacter);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRefreshGhostCharacters);
 
 	/** Called right before player character is going to be removed from the Map, on both server and clients */
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
 	FOnPlayerCharacterPreRemovedFromLevel OnPlayerCharacterPreRemovedFromLevel;
-
-	/** Called to activate a ghost character from a player character reference */
-	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FOnActivateGhostCharacter OnActivateGhostCharacter;
-
-	/** Called to remove a ghost character from map */
-	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FOnRemoveGhostCharacterFromMap OnRemoveGhostCharacterFromMap;
-
-	/** Called to refresh ghost characters  */
-	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FOnRefreshGhostCharacters OnRefreshGhostCharacters;
 
 	// Sets default values for this component's properties
 	UGRSGhostCharacterManagerComponent();
@@ -62,11 +47,6 @@ protected:
 	/** Array of pool actors handlers of characters which should be released */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Pool Actors Handlers"))
 	TArray<FPoolObjectHandle> PoolActorHandlersInternal;
-
-	/** Contains list of player characters that were eliminated at least once with reference to assigned ghost if still a ghost
-	 * If a GhostPlayerCharacter reference is empty it means PlayerCharacter was revived once and character can't be a ghost anymore */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Dead Player Characters"))
-	TMap<class ABmrPawn*, class AGRSPlayerCharacter*> DeadPlayerCharacters;
 
 	/** Contains list of all map components events bounded to. */
 	UPROPERTY(VisibleInstanceOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Bound MapComponents"))
@@ -94,13 +74,13 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RegisterForPlayerDeath();
 	
+	/** Grant to a player revive GAS effect */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void GrantPlayerReviveEffect(class ABmrPawn* PawnToGrant);
+	
 	/** Listen game states to remove ghost character from level */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
-	
-	/** Refresh the ghost characters visual */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void RefreshGhostCharacters() const;
 	
 	/** Called right before owner actor going to remove from the Generated Map, on both server and clients.*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
@@ -121,10 +101,6 @@ protected:
 	/** Unpossess ghost and spawn&possess a regular player character to the level at location */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void RevivePlayerCharacter(class ABmrPawn* PlayerCharacter);
-	
-	/** Remove ghost characters from the map */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void RemoveGhostCharacters();
 
 	/** To unsubscribed from player death events (delegates) and clean ability component */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")

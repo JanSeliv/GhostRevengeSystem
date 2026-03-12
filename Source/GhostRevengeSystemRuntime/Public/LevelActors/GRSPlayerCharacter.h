@@ -99,9 +99,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[GhostRevengeSystem]")
 	FORCEINLINE class UBmrPlayerNameWidgetComponent* GetPlayerName3DWidgetComponent() const { return PlayerName3DWidgetComponentInternal; }
 
-	/** Set/Update player name */
+	/** Sets/Updates player name from possessed pawn player state */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void SetPlayerName(const ABmrPawn* MainCharacter);
+	void UpdatePlayerName(ABmrPlayerState* MyPlayerState);
 
 protected:
 	/** 3D widget component that displays the player name above the character. */
@@ -115,32 +115,49 @@ protected:
 public:
 	friend class UBmrCheatManager;
 
+protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
 
 	/** Native actor is destroyed event */
 	virtual void Destroyed() override;
 
-protected:
 	/** The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnInitialize(const struct FGameplayEventData& Payload);
 
-	/** Refresh ghost players required elements. Happens only when game is starting or active because requires to have all players (humans) to be connected */
+	/** Listen game states to remove ghost character from level */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void OnGameStateChanged(const struct FGameplayEventData& Payload);
+
+	/** Refresh ghost players required elements. Happens only when game is starting or active because requires to have all players (humans) to be connected */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnRefreshGhostCharacters();
 
 	/** Server-only logic Perform ghost character activation (possessing controller) */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void ActivateGhostCharacter(AGRSPlayerCharacter* GhostCharacter, const ABmrPawn* PlayerCharacter);
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCharacter, ABmrPawn* NewPlayerCharacter);
 
 	/** Called right before owner actor going to remove from the Generated Map, on both server and clients.*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnPreRemovedFromLevel(class UBmrMapComponent* MapComponent, class UObject* DestroyCauser);
 
 	/** Remove ghost character from the level */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void OnRemoveGhostCharacterFromMap(AGRSPlayerCharacter* GhostCharacter);
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void RemoveGhostCharacterFromMap();
+
+	/*********************************************************************************************
+	 * Player Character
+	 **********************************************************************************************/
+protected:
+	/** Reference to a player character that was eliminated (original player, not ghost)  */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Player Name 3D Widget Component"))
+	class ABmrPawn* PossessedPlayerCharacter = nullptr;
+
+public:
+	/** Retrieves current possessed character by ghost */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	FORCEINLINE class ABmrPawn* GetPossessedPlayerCharacter(AGRSPlayerCharacter* GhostCharacter) const { return GhostCharacter == this ? PossessedPlayerCharacter : nullptr; }
 
 	/*********************************************************************************************
 	 * GAS

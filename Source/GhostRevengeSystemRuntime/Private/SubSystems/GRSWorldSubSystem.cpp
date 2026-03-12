@@ -15,9 +15,9 @@
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // UE
-#include "GrsGameplayTags.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Engine/Engine.h"
+#include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Structures/BmrGameStateTag.h"
 
@@ -85,7 +85,10 @@ void UGRSWorldSubSystem::TryInit()
 // Checks if the system is ready to load
 bool UGRSWorldSubSystem::IsReady()
 {
-	return CharacterManagerComponent && CollisionMangerComponent;
+	// todo: obtain max player param from Bmr core
+	int32 MaxPlayers = 4;
+
+	return CharacterManagerComponent && CollisionMangerComponent && PawnComponents.Num() == MaxPlayers;
 }
 
 // Clears all transient data created by this subsystem.
@@ -171,6 +174,33 @@ void UGRSWorldSubSystem::ClearCollisions()
 	RightSideCollision = nullptr;
 }
 
+// Checks if the target Player was already revived. Player can be revived only once
+bool UGRSWorldSubSystem::IsRevivable(const ABmrPawn* PlayerToRevive)
+{
+	if (!PlayerToRevive || RevivedPlayerCharacters.Contains(PlayerToRevive))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+// Set a player character as it was revived once
+void UGRSWorldSubSystem::SetRevivedPlayer(ABmrPawn* PlayerToRevive)
+{
+	if (!PlayerToRevive)
+	{
+		return;
+	}
+	RevivedPlayerCharacters.AddUnique(PlayerToRevive);
+}
+
+// Reset revived players so they can be ghosts again
+void UGRSWorldSubSystem::ResetRevivedPlayers()
+{
+	RevivedPlayerCharacters.Empty();
+}
+
 /*********************************************************************************************
  * Ghost Characters
  **********************************************************************************************/
@@ -185,6 +215,10 @@ void UGRSWorldSubSystem::RegisterCharacterManagerComponent(UGRSGhostCharacterMan
 
 	TryInit();
 }
+
+/*********************************************************************************************
+ * Pawn Component
+ **********************************************************************************************/
 
 // Register ghost character
 void UGRSWorldSubSystem::RegisterGhostCharacter(AGRSPlayerCharacter* GhostPlayerCharacter)
@@ -232,6 +266,35 @@ AGRSPlayerCharacter* UGRSWorldSubSystem::GetAvailableGhostCharacter()
 	return nullptr;
 }
 
+// Register a new Pawn component to track the pawn state
+void UGRSWorldSubSystem::RegisterPawnComponent(class UGrsPawnComponent* NewPawnComponent)
+{
+	if (!NewPawnComponent)
+	{
+		return;
+	}
+
+	PawnComponents.AddUnique(NewPawnComponent);
+	TryInit();
+}
+
+// Pawn Components attached to BmrPawn to track Pawn's state change
+TArray<class UGrsPawnComponent*> UGRSWorldSubSystem::GetPawnComponents() const
+{
+	return PawnComponents;
+}
+
+// Clears the registered pawn component once it deleted
+void UGRSWorldSubSystem::UnRegisterPawnComponent(class UGrsPawnComponent* PawnComponentToUnregister)
+{
+	if (!PawnComponentToUnregister || PawnComponents.IsEmpty() || !PawnComponents.Contains(PawnComponentToUnregister))
+	{
+		return;
+	}
+
+	PawnComponents.Remove(PawnComponentToUnregister);
+}
+
 // Clears cached character manager component
 void UGRSWorldSubSystem::UnregisterCharacterManagerComponent()
 {
@@ -255,7 +318,6 @@ void UGRSWorldSubSystem::UnregisterGhostCharacter(AGRSPlayerCharacter* GhostPlay
 
 	if (GhostCharacterRightSide == GhostPlayerCharacter)
 	{
-		GhostCharacterRightSide->Destroy();
 		GhostCharacterRightSide = nullptr;
 	}
 }

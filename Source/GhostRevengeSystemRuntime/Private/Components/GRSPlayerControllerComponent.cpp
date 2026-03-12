@@ -12,6 +12,7 @@
 #include "EnhancedInputComponent.h"
 #include "FunctionPickerData/FunctionPickerTemplate.h"
 #include "GhostRevengeUtils.h"
+#include "GameFramework/BmrPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "MyUtilsLibraries/InputUtilsLibrary.h"
@@ -229,7 +230,7 @@ void UGRSPlayerControllerComponent::ChargeBomb(const FInputActionValue& ActionVa
 		CurrentHoldTimeInternal = 0;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("GRS: Current hold time value: %f"), CurrentHoldTimeInternal);
+	// UE_LOG(LogTemp, Log, TEXT("GRS: Current hold time value: %f"), CurrentHoldTimeInternal);
 }
 
 //  Add and update visual representation of charging (aiming) progress as trajectory

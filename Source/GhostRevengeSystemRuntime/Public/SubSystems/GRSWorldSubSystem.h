@@ -103,6 +103,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void ClearCollisions();
 
+protected:
+	/** Contains list of player characters that were eliminated at least once per game(round) and character can't be a ghost anymore */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Dead Player Characters"))
+	TArray<class ABmrPawn*> RevivedPlayerCharacters;
+
+public:
+	/** Checks if the target Player was already revived. Player can be revived only once
+	 * @param PlayerToRevive The BmrPawn to revive
+	 * @return false if player was revived once in game */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	bool IsRevivable(const ABmrPawn* PlayerToRevive);
+	
+	/** Set a player character as it was revived once */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	void SetRevivedPlayer(ABmrPawn* PlayerToRevive);
+	
+	/** Reset revived players so they can be ghosts again */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	void ResetRevivedPlayers();
+	
 	/*********************************************************************************************
 	 * Ghost Characters
 	 **********************************************************************************************/
@@ -131,10 +151,33 @@ public:
 	/** Register ghost character */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RegisterGhostCharacter(class AGRSPlayerCharacter* GhostPlayerCharacter);
-
+	
 	/** Returns currently available ghost character or nullptr if there is no available ghosts. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	class AGRSPlayerCharacter* GetAvailableGhostCharacter();
+
+	/*********************************************************************************************
+	 * Pawn Component
+	 **********************************************************************************************/
+protected:
+	/** Pawn Components attached to BmrPawn to track Pawn's state change */
+	UPROPERTY(VisibleDefaultsOnly, Category = "[GhostRevengeSystem]")
+	TArray<TObjectPtr<class UGrsPawnComponent>> PawnComponents;
+
+public:
+	/** Register a new Pawn component to track the pawn state */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void RegisterPawnComponent(class UGrsPawnComponent* NewPawnComponent);
+
+	/** Returns all available Pawn */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	TArray<class UGrsPawnComponent*> GetPawnComponents() const;
+
+	/** Clears the registered pawn component once it deleted  */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void UnRegisterPawnComponent(class UGrsPawnComponent* PawnComponentToUnregister);
+
+	
 
 	/** Clears cached character manager component. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
