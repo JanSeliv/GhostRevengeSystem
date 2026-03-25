@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Data/PoolObjectHandle.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
