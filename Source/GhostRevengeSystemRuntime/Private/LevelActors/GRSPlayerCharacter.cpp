@@ -208,6 +208,14 @@ void AGRSPlayerCharacter::BeginPlay()
 	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
 }
 
+void AGRSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	FDoRepLifetimeParams Params;
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, PlayerID, Params);
+}
+
 // Native actor is destroyed event
 void AGRSPlayerCharacter::Destroyed()
 {
@@ -301,17 +309,15 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 		PossessedPlayerCharacter = FromPlayerCharacter;
 	}
 
-	
-	// --- authority calls: 
+	// --- authority calls:
 	TryPossessController(PlayerController);
-	// --- set pawn location (side) 
-	
-	
+	// --- set pawn location (side)
+
 	// --- clients calls:
-	// --- change visibility for this character 
+	// --- change visibility for this character
 	// --- update collision settings
-	// --- activate arrow 
-	// --- just refresh visibility of player name needed, to be changed 
+	// --- activate arrow
+	// --- just refresh visibility of player name needed, to be changed
 	ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
 	UpdatePlayerName(BmrPlayerState);
 }
@@ -368,11 +374,10 @@ void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 	AimingSphereComponent->SetVisibility(false);
 
 	UGRSWorldSubSystem::Get().SetRevivedPlayer(PossessedPlayerCharacter);
-	
-	
-	// --- change visibility of this pawn 
+
+	// --- change visibility of this pawn
 	// -- change nickname visibility of this pawn
-	// --- update collision mod of this pawn if needed 
+	// --- update collision mod of this pawn if needed
 
 	AController* CurrentController = GetController();
 	if (!PossessedPlayerCharacter || !HasAuthority() || !CurrentController)
