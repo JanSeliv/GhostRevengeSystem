@@ -159,6 +159,45 @@ void AGRSPlayerCharacter::SetupCapsuleComponent()
  * Main functionality (core loop)
  **********************************************************************************************/
 
+// Basic initialization of the Pawn
+void AGRSPlayerCharacter::InitPawn(int32 NewPlayerId)
+{
+	if (PlayerID != NewPlayerId)
+	{
+		PlayerID = NewPlayerId;
+	}
+
+	// --- default params required for the fist start to have character prepared
+	SetPlayerMeshData();
+
+	// InitializePlayerName(UBmrBlueprintFunctionLibrary::GetLocalPawn());
+	// InitializePlayerArrow(UBmrBlueprintFunctionLibrary::GetLocalPawn());
+
+	// --- Init character visuals (animations, skin)
+	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetPawn(PlayerID));
+}
+
+//  Register owning pawn component
+void AGRSPlayerCharacter::RegisterPawnComponent(UGrsPawnComponent* NewPawnComponent)
+{
+	if (NewPawnComponent || OwningPawnComponent != NewPawnComponent)
+	{
+		OwningPawnComponent = NewPawnComponent;
+
+		ABmrPawn* MyPawn = &OwningPawnComponent->GetBmrPawnChecked();
+		if (MyPawn)
+		{
+			UBmrMapComponent* MapComponent = UBmrMapComponent::GetMapComponent(MyPawn);
+			if (!ensureMsgf(MapComponent, TEXT("ASSERT: [%i] %hs:\n 'MapComponent' is null!"), __LINE__, __FUNCTION__))
+			{
+				return;
+			}
+
+			MapComponent->OnPreRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::OnPreRemovedFromLevel);
+		}
+	}
+}
+
 // Called when the game starts or when spawned (on spawned on the level)
 void AGRSPlayerCharacter::BeginPlay()
 {
@@ -189,21 +228,32 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	// --- bind to  clear ghost data
 	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
 
-	UGRSGhostCharacterManagerComponent* CharacterManagerComponent = UGRSWorldSubSystem::Get().GetGRSCharacterManagerComponent();
-	if (CharacterManagerComponent)
-	{
-		CharacterManagerComponent->OnPlayerCharacterPreRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::OnPreRemovedFromLevel);
-	}
-
-	// --- handle initiation of ghosts player if MGF loaded during start of the game or in active game
-	const ABmrGameState& GameState = ABmrGameState::Get();
-	if (GameState.HasMatchingGameplayTag(FBmrGameStateTag::GameStarting) || GameState.HasMatchingGameplayTag(FBmrGameStateTag::InGame))
-	{
-		OnRefreshGhostCharacters();
-	}
+	// --- bind to track player death status
+	ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
+	checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
+	InPlayerState->OnPlayerDeadChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerDeadChanged);
 
 	// --- ghost added to level
 	OnGhostAddedToLevel.Broadcast();
+}
+
+// Listen for Player State property bIsDead. It assumes that PlayerState is not respawned on player join and not destroyed on player leave, but is reused for both human and bot characters
+void AGRSPlayerCharacter::OnPlayerDeadChanged_Implementation(bool bIsDead)
+{
+	if (!bIsDead)
+	{
+		return;
+	}
+
+	if (this != UGRSWorldSubSystem::Get().GetAvailableGhostCharacter())
+	{
+		return;
+	}
+
+	ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
+	checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
+
+	UpdatePlayerName(InPlayerState);
 }
 
 // Listen game states to remove ghost character from level
@@ -217,55 +267,53 @@ void AGRSPlayerCharacter::OnGameStateChanged_Implementation(const struct FGamepl
 
 	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
 	{
-		OnRefreshGhostCharacters();
 		UGRSWorldSubSystem::Get().ResetRevivedPlayers();
+		PossessedPlayerCharacter = nullptr;
 	}
 }
 
-// Refresh ghost players required elements. Happens only when game is starting or active because requires to have all players (humans) to be connected
-void AGRSPlayerCharacter::OnRefreshGhostCharacters()
-{
-	// --- default params required for the fist start to have character prepared
-	SetPlayerMeshData();
-	// --- Init Player name
-	// InitializePlayerName(UBmrBlueprintFunctionLibrary::GetLocalPawn());
-	// --- Init character visuals (animations, skin)
-	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetLocalPawn());
-}
-
-// Server-only logic Perform ghost character activation (possessing controller)
-void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCharacter, ABmrPawn* NewPlayerCharacter)
+// Activates ghost with required initiation
+void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCharacter, ABmrPawn* FromPlayerCharacter)
 {
 	if (!GhostCharacter
 	    || GhostCharacter != this
-	    || !NewPlayerCharacter
-	    || !UGRSWorldSubSystem::Get().IsRevivable(NewPlayerCharacter))
+	    || !FromPlayerCharacter
+	    || !UGRSWorldSubSystem::Get().IsRevivable(FromPlayerCharacter))
 	{
 		return;
 	}
 
-	AController* PlayerController = NewPlayerCharacter->GetController();
+	AController* PlayerController = FromPlayerCharacter->GetController();
 	if (!PlayerController)
 	{
 		return;
 	}
-	
-	// --- check if the player already possessed by other ghost 
+
+	// --- check if the player already possessed by other ghost
 	AGRSPlayerCharacter* CurrentGhostCharacter = Cast<AGRSPlayerCharacter>(PlayerController->GetPawn());
 	if (CurrentGhostCharacter)
 	{
 		return;
 	}
 
-	if (PossessedPlayerCharacter != NewPlayerCharacter)
+	if (PossessedPlayerCharacter != FromPlayerCharacter)
 	{
-		PossessedPlayerCharacter = NewPlayerCharacter;
+		PossessedPlayerCharacter = FromPlayerCharacter;
 	}
 
-	ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(NewPlayerCharacter->GetPlayerState());
-	UpdatePlayerName(BmrPlayerState);
-
+	
+	// --- authority calls: 
 	TryPossessController(PlayerController);
+	// --- set pawn location (side) 
+	
+	
+	// --- clients calls:
+	// --- change visibility for this character 
+	// --- update collision settings
+	// --- activate arrow 
+	// --- just refresh visibility of player name needed, to be changed 
+	ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
+	UpdatePlayerName(BmrPlayerState);
 }
 
 // Called right before owner actor going to remove from the Generated Map, on both server and clients.
@@ -291,18 +339,18 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 		return;
 	}
 
-	// --- ghost eliminates a player
+	// --- ghost eliminates a player - remove ghost from map
 	const AGRSPlayerCharacter* GRSCharacter = Cast<AGRSPlayerCharacter>(Causer);
 	if (GRSCharacter && GRSCharacter == this)
 	{
 		OnGhostEliminatesPlayer.Broadcast(PlayerCharacter->GetActorLocation(), this);
 		UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostEliminatesPlayer.Broadcast"), __LINE__, __FUNCTION__);
 		RemoveGhostCharacterFromMap();
+		RevivePlayerCharacter(PlayerCharacter);
 	}
 
 	// --- a player was eliminated - activate ghost character
-	AGRSPlayerCharacter* GhostToActive = UGRSWorldSubSystem::Get().GetAvailableGhostCharacter();
-	if (GhostToActive == this)
+	if (DestroyCauserPlayerState->GetPlayerId() == PlayerID)
 	{
 		TryActivateGhostCharacter(this, PlayerCharacter);
 	}
@@ -311,28 +359,68 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 // Remove ghost character from the level
 void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 {
-	if (!GetController())
-	{
-		return;
-	}
+	// --- move all functional part such as posses to ability
+	// --- possess back to player character for any cases
+	// PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// --- Disable aiming point
 	AimingSphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AimingSphereComponent->SetVisibility(false);
 
 	UGRSWorldSubSystem::Get().SetRevivedPlayer(PossessedPlayerCharacter);
+	
+	
+	// --- change visibility of this pawn 
+	// -- change nickname visibility of this pawn
+	// --- update collision mod of this pawn if needed 
+
+	AController* CurrentController = GetController();
+	if (!PossessedPlayerCharacter || !HasAuthority() || !CurrentController)
+	{
+		return;
+	}
+
+	if (CurrentController->GetPawn())
+	{
+		// At first, unpossess previous controller
+		CurrentController->UnPossess();
+	}
+
+	// --- Always possess to player character when ghost character is no longer in control
+	CurrentController->Possess(PossessedPlayerCharacter);
+
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerController is %s"), __LINE__, __FUNCTION__, CurrentController ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerCharacter is %s"), __LINE__, __FUNCTION__, PossessedPlayerCharacter ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerCharacter: %s"), __LINE__, __FUNCTION__, *GetNameSafe(PossessedPlayerCharacter));
 
 	// --- reset player character reference
 	PossessedPlayerCharacter = nullptr;
 
-	OnGhostRemovedFromLevel.Broadcast(GetController(), this);
+	OnGhostRemovedFromLevel.Broadcast(CurrentController, this);
 	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostRemovedFromLevel.Broadcast"), __LINE__, __FUNCTION__);
+}
 
-	// --- not ghost character controlled, could be null
-	if (GetController() && GetController()->HasAuthority())
+// Unpossess ghost and spawn&possess a regular player character to the level at location
+void AGRSPlayerCharacter::RevivePlayerCharacter(class ABmrPawn* PlayerCharacter)
+{
+	const ABmrGameState& GameState = ABmrGameState::Get();
+	if (!PlayerCharacter || !GameState.HasMatchingGameplayTag(FBmrGameStateTag::InGame))
 	{
-		GetController()->UnPossess();
+		return;
 	}
+
+	// --- Activate revive ability if player was NOT revived previously
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PlayerCharacter);
+	FGameplayEventData EventData;
+	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(PlayerCharacter->GetActorLocation());
+	ASC->HandleGameplayEvent(UGRSDataAsset::Get().GetReviePlayerCharacterTriggerTag(), &EventData);
+}
+
+// Called on client when player ID is changed
+void AGRSPlayerCharacter::OnRep_PlayerID()
+{
+	// --- Init Grs Pawn logic
+	InitPawn(PlayerID);
 }
 
 /*********************************************************************************************
@@ -446,7 +534,7 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 // Set and apply skeletal mesh for ghost player. Copy mesh from current player
 void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 {
-	ABmrPawn* PlayerCharacter = UBmrBlueprintFunctionLibrary::GetLocalPawn();
+	ABmrPawn* PlayerCharacter = UBmrBlueprintFunctionLibrary::GetPawn(PlayerID);
 	checkf(PlayerCharacter, TEXT("ERROR: [%i] %hs:\n'PlayerCharacter' is null!"), __LINE__, __FUNCTION__);
 
 	const EBmrLevelType PlayerFlag = UBmrBlueprintFunctionLibrary::GetLevelType();
