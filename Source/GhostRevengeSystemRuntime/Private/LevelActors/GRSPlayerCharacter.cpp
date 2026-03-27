@@ -373,6 +373,7 @@ void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 	AimingSphereComponent->SetVisibility(false);
 
 	UGRSWorldSubSystem::Get().SetRevivedPlayer(PossessedPlayerCharacter);
+	UGRSWorldSubSystem::Get().UnregisterGhostCharacter(this);
 
 	// --- change visibility of this pawn
 	// -- change nickname visibility of this pawn
@@ -586,7 +587,8 @@ void AGRSPlayerCharacter::SetPawnSide()
 	}
 	EGRSCharacterSide CharacterSide = UGRSWorldSubSystem::Get().RegisterGhostCharacter(this);
 
-	checkf(CharacterSide == EGRSCharacterSide::None, TEXT("ERROR: [%i] %hs:\n'CharacterSide' is none!"), __LINE__, __FUNCTION__);
+	checkf(!(CharacterSide == EGRSCharacterSide::None), TEXT("ERROR: [%i] %hs:\n'CharacterSide' is none!"), __LINE__, __FUNCTION__);
+	
 
 	FBmrCell ActorSpawnLocation;
 	float CellSize = FBmrCell::CellSize + (FBmrCell::CellSize / 2);
