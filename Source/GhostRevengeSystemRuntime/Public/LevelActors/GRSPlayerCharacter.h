@@ -107,7 +107,7 @@ protected:
 	/** 3D widget component that displays the player name above the character. */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Player Name 3D Widget Component"))
 	TObjectPtr<class UBmrPlayerNameWidgetComponent> PlayerName3DWidgetComponentInternal = nullptr;
-	
+
 	/** A GrsPawnComponent that spawned this pawn */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Owning Grs Pawn Component"))
 	class UGrsPawnComponent* OwningPawnComponent = nullptr;
@@ -118,11 +118,11 @@ protected:
 
 public:
 	friend class UBmrCheatManager;
-	
+
 	/** Basic initialization of the Pawn */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void InitPawn(int32 NewPlayerId);
-	
+
 	/** Register owning pawn component */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RegisterPawnComponent(class UGrsPawnComponent* NewPawnComponent);
@@ -130,7 +130,7 @@ public:
 protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
-	
+
 	/** Returns properties that are replicated for the lifetime of the actor channel. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -140,11 +140,11 @@ protected:
 	/** The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnInitialize(const struct FGameplayEventData& Payload);
-	
+
 	/** Listen for Player State property bIsDead. It assumes that PlayerState is not respawned on player join and not destroyed on player leave, but is reused for both human and bot characters */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnPlayerDeadChanged(bool bIsDead);
-	
+
 	/** Listen game states to remove ghost character from level */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
@@ -160,7 +160,7 @@ protected:
 	/** Remove ghost character from the level */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RemoveGhostCharacterFromMap();
-	
+
 	/** Unpossess ghost and spawn&possess a regular player character to the level at location */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void RevivePlayerCharacter(class ABmrPawn* PlayerCharacter);
@@ -172,7 +172,7 @@ protected:
 	/** Reference to a player character that was eliminated (original player, not ghost)  */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Bmr Player Character"))
 	class ABmrPawn* PossessedPlayerCharacter = nullptr;
-	
+
 	/** Player id of related BmrPlayerCharacter */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, ReplicatedUsing = "OnRep_PlayerID", Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Id of Bmr Player Character"))
 	int32 PlayerID = 0;
@@ -181,12 +181,10 @@ public:
 	/** Retrieves current possessed character by ghost */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	FORCEINLINE class ABmrPawn* GetPossessedPlayerCharacter(AGRSPlayerCharacter* GhostCharacter) const { return GhostCharacter == this ? PossessedPlayerCharacter : nullptr; }
-	
+
 	/** Called on client when player ID is changed. */
 	UFUNCTION()
 	void OnRep_PlayerID();
-	
-	
 
 	/*********************************************************************************************
 	 * GAS
@@ -241,6 +239,10 @@ protected:
 	/** Possess a player controller */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "[GhostRevengeSystem]")
 	void TryPossessController(AController* PlayerController);
+
+	/** Set side for this pawn (left or right) */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "[GhostRevengeSystem]")
+	void SetPawnSide();
 
 	/*********************************************************************************************
 	 * Aiming

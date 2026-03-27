@@ -148,9 +148,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	FORCEINLINE class UGRSGhostCharacterManagerComponent* GetGRSCharacterManagerComponent() const { return CharacterManagerComponent; }
 
-	/** Register ghost character */
+	/** Register ghost character to obtain it's side NONE if all sides occupied  */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void RegisterGhostCharacter(class AGRSPlayerCharacter* GhostPlayerCharacter);
+	EGRSCharacterSide RegisterGhostCharacter(class AGRSPlayerCharacter* GhostPlayerCharacter);
 	
 	/** Returns currently available ghost character or nullptr if there is no available ghosts. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))

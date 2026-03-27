@@ -166,15 +166,6 @@ void AGRSPlayerCharacter::InitPawn(int32 NewPlayerId)
 	{
 		PlayerID = NewPlayerId;
 	}
-
-	// --- default params required for the fist start to have character prepared
-	SetPlayerMeshData();
-
-	// InitializePlayerName(UBmrBlueprintFunctionLibrary::GetLocalPawn());
-	// InitializePlayerArrow(UBmrBlueprintFunctionLibrary::GetLocalPawn());
-
-	// --- Init character visuals (animations, skin)
-	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetPawn(PlayerID));
 }
 
 //  Register owning pawn component
@@ -203,8 +194,6 @@ void AGRSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Log, TEXT("AGRSPlayerCharacter::OnInitialize ghost character  --- %s - %s"), *this->GetName(), this->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
-	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
-	WorldSubsystem.RegisterGhostCharacter(this);
 	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
 }
 
@@ -237,10 +226,19 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
 
 	// --- bind to track player death status
-	ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
-	checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
-	InPlayerState->OnPlayerDeadChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerDeadChanged);
+	//ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
+	//checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
+	//InPlayerState->OnPlayerDeadChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerDeadChanged);
 
+	// --- default params required for the fist start to have character prepared
+	SetPlayerMeshData();
+
+	// InitializePlayerName(UBmrBlueprintFunctionLibrary::GetLocalPawn());
+	// InitializePlayerArrow(UBmrBlueprintFunctionLibrary::GetLocalPawn());
+
+	// --- Init character visuals (animations, skin)
+	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetPawn(PlayerID));
+	
 	// --- ghost added to level
 	OnGhostAddedToLevel.Broadcast();
 }
@@ -312,6 +310,7 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 	// --- authority calls:
 	TryPossessController(PlayerController);
 	// --- set pawn location (side)
+	SetPawnSide();
 
 	// --- clients calls:
 	// --- change visibility for this character
@@ -576,6 +575,38 @@ void AGRSPlayerCharacter::TryPossessController(AController* PlayerController)
 	}
 
 	PlayerController->Possess(this);
+}
+
+//  Set side for this pawn (left or right)
+void AGRSPlayerCharacter::SetPawnSide()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	EGRSCharacterSide CharacterSide = UGRSWorldSubSystem::Get().RegisterGhostCharacter(this);
+
+	checkf(CharacterSide == EGRSCharacterSide::None, TEXT("ERROR: [%i] %hs:\n'CharacterSide' is none!"), __LINE__, __FUNCTION__);
+
+	FBmrCell ActorSpawnLocation;
+	float CellSize = FBmrCell::CellSize + (FBmrCell::CellSize / 2);
+
+	if (CharacterSide == EGRSCharacterSide::Left)
+	{
+		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopLeft);
+		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X - CellSize;
+		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+	}
+	else if (CharacterSide == EGRSCharacterSide::Right)
+	{
+		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopRight);
+		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X + CellSize;
+		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+	}
+
+	// Match the Z axis to what we have on the level
+	ActorSpawnLocation.Location.Z = 100.0f;
+	SetActorLocation(ActorSpawnLocation);
 }
 
 // Add a mesh to the last element of the predict Projectile path results

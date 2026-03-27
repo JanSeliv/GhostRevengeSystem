@@ -221,33 +221,23 @@ void UGRSWorldSubSystem::RegisterCharacterManagerComponent(UGRSGhostCharacterMan
  **********************************************************************************************/
 
 // Register ghost character
-void UGRSWorldSubSystem::RegisterGhostCharacter(AGRSPlayerCharacter* GhostPlayerCharacter)
+EGRSCharacterSide UGRSWorldSubSystem::RegisterGhostCharacter(AGRSPlayerCharacter* GhostPlayerCharacter)
 {
 	checkf(GhostPlayerCharacter, TEXT("ERROR: [%i] %hs:\n'GhostPlayerCharacter' is null!"), __LINE__, __FUNCTION__);
-
-	FBmrCell ActorSpawnLocation;
-	float CellSize = FBmrCell::CellSize + (FBmrCell::CellSize / 2);
 
 	if (!GhostCharacterLeftSide)
 	{
 		GhostCharacterLeftSide = GhostPlayerCharacter;
-
-		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopLeft);
-		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X - CellSize;
-		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+		return EGRSCharacterSide::Left;
 	}
-	else if (!GhostCharacterRightSide)
+
+	if (!GhostCharacterRightSide)
 	{
 		GhostCharacterRightSide = GhostPlayerCharacter;
-
-		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopRight);
-		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X + CellSize;
-		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+		return EGRSCharacterSide::Right;
 	}
 
-	// Match the Z axis to what we have on the level
-	ActorSpawnLocation.Location.Z = 100.0f;
-	GhostPlayerCharacter->SetActorLocation(ActorSpawnLocation);
+	return EGRSCharacterSide::None;
 }
 
 // Returns currently available ghost character or nullptr if there is no available ghosts.

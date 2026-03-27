@@ -16,6 +16,7 @@
 #include "SubSystems/GRSWorldSubSystem.h"
 #include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
+#include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 class UGRSWorldSubSystem;
 // Sets default values for this component's properties
