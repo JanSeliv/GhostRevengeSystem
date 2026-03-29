@@ -105,7 +105,7 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 
 			// --- Clear splines
 			GhostCharacter->ClearTrajectorySplines();
-			GhostCharacter->ApplyExplosionGameplayEffect();
+			GhostCharacter-> ApplyExplosionGameplayEffect();
 		}
 	}
 
@@ -116,7 +116,7 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 		if (GhostCharacter)
 		{
 			SetManagedInputContextEnabled(GetPlayerController(), false);
-			GhostCharacter->RemoveActiveGameplayEffect();
+			GhostCharacter->RemoveExplosionGameplayEffect();
 		}
 	}
 }

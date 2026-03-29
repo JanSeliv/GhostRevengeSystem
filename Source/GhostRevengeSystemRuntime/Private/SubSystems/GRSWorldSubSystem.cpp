@@ -17,7 +17,9 @@
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Engine/Engine.h"
+#include "GameFramework/BmrPlayerState.h"
 #include "GrsGameplayTags.h"
+#include "Components/GrsPlayerStateComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Structures/BmrGameStateTag.h"
 
@@ -326,6 +328,47 @@ void UGRSWorldSubSystem::ClearGhostCharacters()
 		GhostCharacterRightSide->Destroy();
 		GhostCharacterRightSide = nullptr;
 	}
+}
+
+// Register a new player state component
+void UGRSWorldSubSystem::RegisterPlayerStateComponent(UGrsPlayerStateComponent* NewPlayerStateComponent)
+{
+	if (!NewPlayerStateComponent)
+	{
+		return;
+	}
+
+	PlayerStateComponents.AddUnique(NewPlayerStateComponent);
+}
+
+// Unregister a player state component
+void UGRSWorldSubSystem::UnRegisterPlayerStateComponent(UGrsPlayerStateComponent* PlayerStateComponent)
+{
+	if (!PlayerStateComponent)
+	{
+		return;
+	}
+
+	PlayerStateComponents.Remove(PlayerStateComponent);
+}
+
+// Find a player state component by player ID
+UGrsPlayerStateComponent* UGRSWorldSubSystem::GetPlayerStateComponent(int32 TargetPlayerID)
+{
+	for (UGrsPlayerStateComponent* PlayerStateComponent : PlayerStateComponents)
+	{
+		ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(PlayerStateComponent->GetOwner());
+		if (!ensureMsgf(BmrPlayerState, TEXT("ASSERT: [%i] %hs:\n'BmrPlayerState' is not valid!"), __LINE__, __FUNCTION__))
+		{
+			return nullptr;
+		}
+
+		if (BmrPlayerState->GetPlayerId() == TargetPlayerID)
+		{
+			return PlayerStateComponent;
+		}
+	}
+	return nullptr;
 }
 
 /*********************************************************************************************

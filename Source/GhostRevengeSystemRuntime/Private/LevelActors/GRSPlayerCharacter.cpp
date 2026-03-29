@@ -13,6 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/GRSGhostCharacterManagerComponent.h"
 #include "Components/GrsPawnComponent.h"
+#include "Components/GrsPlayerStateComponent.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Controllers/BmrPlayerController.h"
@@ -208,9 +209,9 @@ void AGRSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 // Native actor is destroyed event
 void AGRSPlayerCharacter::Destroyed()
 {
-	Super::Destroyed();
-	RemoveActiveGameplayEffect();
 	PerformCleanUp();
+
+	Super::Destroyed();
 }
 
 // The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point
@@ -226,9 +227,9 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
 
 	// --- bind to track player death status
-	//ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
-	//checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
-	//InPlayerState->OnPlayerDeadChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerDeadChanged);
+	// ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
+	// checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
+	// InPlayerState->OnPlayerDeadChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerDeadChanged);
 
 	// --- default params required for the fist start to have character prepared
 	SetPlayerMeshData();
@@ -238,7 +239,7 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 
 	// --- Init character visuals (animations, skin)
 	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetPawn(PlayerID));
-	
+
 	// --- ghost added to level
 	OnGhostAddedToLevel.Broadcast();
 }
@@ -351,7 +352,8 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 		OnGhostEliminatesPlayer.Broadcast(PlayerCharacter->GetActorLocation(), this);
 		UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostEliminatesPlayer.Broadcast"), __LINE__, __FUNCTION__);
 		RemoveGhostCharacterFromMap();
-		RevivePlayerCharacter(PlayerCharacter);
+
+		UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->RevivePlayerCharacter(PlayerCharacter);
 	}
 
 	// --- a player was eliminated - activate ghost character
@@ -405,81 +407,11 @@ void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostRemovedFromLevel.Broadcast"), __LINE__, __FUNCTION__);
 }
 
-// Unpossess ghost and spawn&possess a regular player character to the level at location
-void AGRSPlayerCharacter::RevivePlayerCharacter(class ABmrPawn* PlayerCharacter)
-{
-	const ABmrGameState& GameState = ABmrGameState::Get();
-	if (!PlayerCharacter || !GameState.HasMatchingGameplayTag(FBmrGameStateTag::InGame))
-	{
-		return;
-	}
-
-	// --- Activate revive ability if player was NOT revived previously
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PlayerCharacter);
-	FGameplayEventData EventData;
-	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(PlayerCharacter->GetActorLocation());
-	ASC->HandleGameplayEvent(UGRSDataAsset::Get().GetReviePlayerCharacterTriggerTag(), &EventData);
-}
-
 // Called on client when player ID is changed
 void AGRSPlayerCharacter::OnRep_PlayerID()
 {
 	// --- Init Grs Pawn logic
 	InitPawn(PlayerID);
-}
-
-/*********************************************************************************************
- * GAS
- **********************************************************************************************/
-// Returns the Ability System Component from the Player State
-UAbilitySystemComponent* AGRSPlayerCharacter::GetAbilitySystemComponent() const
-{
-	const ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
-	return InPlayerState ? InPlayerState->GetAbilitySystemComponent() : nullptr;
-}
-
-// To Remove current active applied gameplay effect
-void AGRSPlayerCharacter::RemoveActiveGameplayEffect()
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetInstigator());
-	if (!ASC)
-	{
-		return;
-	}
-
-	ASC->RemoveActiveGameplayEffect(GASEffectHandle);
-	GASEffectHandle.Invalidate();
-}
-
-// To apply explosion gameplay effect
-void AGRSPlayerCharacter::ApplyExplosionGameplayEffect()
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	// Actor has ASC: apply damage effect through GAS
-	if (GASEffectHandle.IsValid())
-	{
-		return;
-	}
-	const ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
-	if (!ensureMsgf(InPlayerState, TEXT("ASSERT: [%i] %hs:\n'InPlayerState' is not null!"), __LINE__, __FUNCTION__))
-	{
-		return;
-	}
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(InPlayerState);
-	TSubclassOf<UGameplayEffect> ExplosionDamageEffect = UGRSDataAsset::Get().GetExplosionDamageEffect();
-	if (ensureMsgf(ExplosionDamageEffect, TEXT("ASSERT: [%i] %hs:\n'ExplosionDamageEffect' is not set!"), __LINE__, __FUNCTION__))
-	{
-		GASEffectHandle = ASC->ApplyGameplayEffectToSelf(ExplosionDamageEffect.GetDefaultObject(), /*Level*/ 1.f, ASC->MakeEffectContext());
-	}
 }
 
 /*********************************************************************************************
@@ -495,17 +427,6 @@ UBmrSkeletalMeshComponent& AGRSPlayerCharacter::GetMeshChecked() const
 void AGRSPlayerCharacter::SetVisibility(bool Visibility)
 {
 	GetMesh()->SetVisibility(Visibility, true);
-}
-
-// Returns own character ID, e.g: 0, 1, 2, 3
-int32 AGRSPlayerCharacter::GetPlayerId() const
-{
-	if (const ABmrPlayerState* MyPlayerState = GetPlayerState<ABmrPlayerState>())
-	{
-		return MyPlayerState->GetPlayerId();
-	}
-
-	return 0;
 }
 
 //  Set character visual once added to the level from a refence character (visuals, animations)
@@ -588,7 +509,6 @@ void AGRSPlayerCharacter::SetPawnSide()
 	EGRSCharacterSide CharacterSide = UGRSWorldSubSystem::Get().RegisterGhostCharacter(this);
 
 	checkf(!(CharacterSide == EGRSCharacterSide::None), TEXT("ERROR: [%i] %hs:\n'CharacterSide' is none!"), __LINE__, __FUNCTION__);
-	
 
 	FBmrCell ActorSpawnLocation;
 	float CellSize = FBmrCell::CellSize + (FBmrCell::CellSize / 2);
@@ -616,6 +536,18 @@ void AGRSPlayerCharacter::AddMeshToEndProjectilePath(FVector Location)
 {
 	AimingSphereComponent->SetVisibility(true);
 	AimingSphereComponent->SetWorldLocation(Location);
+}
+
+// Applies spawn bomb gameplay effect
+void AGRSPlayerCharacter::ApplyExplosionGameplayEffect()
+{
+	UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->ApplyBombSpawningGameplayEffect();
+}
+
+// Removes spawn bomb gameplay effect
+void AGRSPlayerCharacter::RemoveExplosionGameplayEffect()
+{
+	UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->RemoveBombSpawningGameplayEffect();
 }
 
 // Add spline points to the spline component
@@ -708,10 +640,9 @@ void AGRSPlayerCharacter::ThrowProjectile()
 void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 {
 	const FBmrCell& SpawnBombCell = UBmrCellUtilsLibrary::GetNearestFreeCell(TargetCell);
-	FGameplayEventData EventData;
-	EventData.Instigator = GetInstigator();
-	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(SpawnBombCell);
-	GetAbilitySystemComponent()->HandleGameplayEvent(UGRSDataAsset::Get().GetTriggerBombTag(), &EventData);
+	TObjectPtr<const AActor> TargetInstigator = GetInstigator();
+
+	UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->UseSpawnBomb(SpawnBombCell, TargetInstigator);
 }
 
 //  Clean up the character for the MGF unload
@@ -750,6 +681,15 @@ void AGRSPlayerCharacter::PerformCleanUp()
 		AimingSphereComponent->DestroyComponent();
 		AimingSphereComponent = nullptr;
 	}
+
+	if (PlayerName3DWidgetComponentInternal)
+	{
+		PlayerName3DWidgetComponentInternal = nullptr;
+	}
+
+	OwningPawnComponent = nullptr;
+	PossessedPlayerCharacter = nullptr;
+	PlayerID = 0;
 
 	// --- perform clean up from subsystem MGF is not possible so we have to call directly to clean cached references
 	UGRSWorldSubSystem::Get().UnregisterGhostCharacter(this);

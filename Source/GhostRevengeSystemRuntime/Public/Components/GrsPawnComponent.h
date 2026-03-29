@@ -28,6 +28,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[GhostRevengeSystem]")
 	ABmrPawn* GetBmrPawn() const;
 	ABmrPawn& GetBmrPawnChecked() const;
+	
+	/** Returns GrsPlayerStateComponent obtaining from pawn's player id */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[GhostRevengeSystem]")
+	class UGrsPlayerStateComponent* GetGrsPlayerStateComponent() const;
+	class UGrsPlayerStateComponent* GetGrsPlayerStateComponentChecked() const;
 
 	/*********************************************************************************************
 	 * Main functionality (core loop)
@@ -53,14 +58,6 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
 	
-	/** Grant to a player revive GAS effect */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void GrantPlayerReviveEffect(class ABmrPawn* PawnToGrant);
-	
-	/** To Remove current active applied gameplay effect */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void RemoveAppliedReviveGameplayEffect(const ABmrPawn* PlayerCharacter);
-	
 	/** Add ghost character to the current active game (on level map) */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void AddGhostCharacter();
@@ -75,8 +72,4 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void OnGhostRemovedFromLevel(class AController* CurrentController, class AGRSPlayerCharacter* GhostCharacter);
 	
-public:
-	
-
-public:
 };

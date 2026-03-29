@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Actors/BmrPawn.h"
+#include "Components/GrsPlayerStateComponent.h"
 #include "Data/GRSDataAsset.h"
 #include "GameFramework/BmrGameState.h"
 #include "GrsGameplayTags.h"
@@ -39,6 +40,19 @@ ABmrPawn& UGrsPawnComponent::GetBmrPawnChecked() const
 	return *MyBmrPawn;
 }
 
+// Returns GrsPlayerStateComponent obtaining from pawn's player id
+UGrsPlayerStateComponent* UGrsPawnComponent::GetGrsPlayerStateComponent() const
+{
+	return UGRSWorldSubSystem::Get().GetPlayerStateComponent(GetBmrPawn()->GetPlayerId());
+}
+
+UGrsPlayerStateComponent* UGrsPawnComponent::GetGrsPlayerStateComponentChecked() const
+{
+	UGrsPlayerStateComponent* GrsPlayerStateComponent = GetGrsPlayerStateComponent();
+	checkf(GrsPlayerStateComponent, TEXT("%s: 'GrsPlayerStateComponent' is null"), *FString(__FUNCTION__));
+	return GrsPlayerStateComponent;
+}
+
 // Called when the game starts
 void UGrsPawnComponent::BeginPlay()
 {
@@ -54,6 +68,8 @@ void UGrsPawnComponent::BeginPlay()
 void UGrsPawnComponent::OnUnregister()
 {
 	Super::OnUnregister();
+	
+	UGRSWorldSubSystem::Get().UnRegisterPawnComponent(this);
 
 	if (GrsPawnPoolManagerHandlers.Num() > 0)
 	{
@@ -77,67 +93,19 @@ void UGrsPawnComponent::OnInitialize(const struct FGameplayEventData& Payload)
 // Listen game states to grant revive ability for player character
 void UGrsPawnComponent::OnGameStateChanged_Implementation(const struct FGameplayEventData& Payload)
 {
+	if (!GetBmrPawnChecked().IsPlayerControlled())
+	{
+		return;
+	}
+
 	if (!Payload.InstigatorTags.HasTag(FBmrGameStateTag::InGame))
 	{
-		// -- release (unpossess) all ghosts
-		RemoveAppliedReviveGameplayEffect(GetBmrPawn());
+		GetGrsPlayerStateComponentChecked()->RemoveAppliedReviveGameplayEffect();
 	}
 
 	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
 	{
-		GrantPlayerReviveEffect(GetBmrPawn());
-	}
-}
-
-// Grant to a player revive GAS effect
-void UGrsPawnComponent::GrantPlayerReviveEffect(ABmrPawn* PawnToGrant)
-{
-	if (!PawnToGrant
-	    || !GetOwner()->HasAuthority()
-	    || PawnToGrant->IsPlayerControlled())
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PawnToGrant);
-	if (!ensureMsgf(ASC, TEXT("ASSERT: [%i] %hs:\n 'ASC' is not set!"), __LINE__, __FUNCTION__))
-	{
-		return;
-	}
-
-	TSubclassOf<UGameplayEffect> PlayerReviveEffect = UGRSDataAsset::Get().GetPlayerReviveEffect();
-	if (ensureMsgf(PlayerReviveEffect, TEXT("ASSERT: [%i] %hs:\n'PlayerDeathEffect' is not set!"), __LINE__, __FUNCTION__))
-	{
-		ASC->ApplyGameplayEffectToSelf(PlayerReviveEffect.GetDefaultObject(), /*Level*/ 1.f, ASC->MakeEffectContext());
-	}
-}
-
-// To Remove current active applied gameplay effect
-void UGrsPawnComponent::RemoveAppliedReviveGameplayEffect(const ABmrPawn* PlayerCharacter)
-{
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	// Actor has ASC: apply effect through GAS
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(PlayerCharacter);
-	if (!ensureMsgf(ASC, TEXT("ASSERT: [%i] %hs:\n 'ASC' is not set!"), __LINE__, __FUNCTION__))
-	{
-		return;
-	}
-
-	TSubclassOf<UGameplayEffect> PlayerReviveEffect = UGRSDataAsset::Get().GetPlayerReviveEffect();
-	if (ensureMsgf(PlayerReviveEffect, TEXT("ASSERT: [%i] %hs:\n'PlayerDeathEffect' is not returned from data asset!"), __LINE__, __FUNCTION__))
-	{
-		FGameplayEffectQuery Query;
-		Query.EffectDefinition = PlayerReviveEffect;
-		TArray<FActiveGameplayEffectHandle> Handles = ASC->GetActiveEffects(Query);
-		for (FActiveGameplayEffectHandle Handle : Handles)
-		{
-			ASC->RemoveActiveGameplayEffect(Handle);
-			Handle.Invalidate();
-		}
+		GetGrsPlayerStateComponentChecked()->GrantPlayerReviveEffect();
 	}
 }
 
