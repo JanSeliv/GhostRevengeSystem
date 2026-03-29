@@ -11,9 +11,11 @@
 #include "GameFramework/BmrGameState.h"
 #include "GameFramework/BmrPlayerState.h"
 #include "GrsGameplayTags.h"
+#include "Structures/BmrGameplayTags.h"
 #include "Structures/BmrGameStateTag.h"
 #include "SubSystems/GRSWorldSubSystem.h"
 #include "Subsystems/BmrGameplayMessageSubsystem.h"
+#include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // Sets default values for this component's properties
@@ -60,12 +62,12 @@ void UGrsPlayerStateComponent::OnUnregister()
 
 	RemoveAppliedReviveGameplayEffect();
 	RemoveBombSpawningGameplayEffect();
-	
+
 	if (AppliedBombSpawnEffectHandle.IsValid())
 	{
 		AppliedBombSpawnEffectHandle.Invalidate();
 	}
-	
+
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
 	WorldSubsystem.UnRegisterPlayerStateComponent(this);
 }
@@ -73,6 +75,26 @@ void UGrsPlayerStateComponent::OnUnregister()
 // Starting point once whole module is ready(loaded) to be initialized
 void UGrsPlayerStateComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
+	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
+}
+
+// Listen game states to grant revive ability for player character
+void UGrsPlayerStateComponent::OnGameStateChanged_Implementation(const struct FGameplayEventData& Payload)
+{
+	if (GetCurrentPlayerState()->IsABot())
+	{
+		return;
+	}
+
+	if (!Payload.InstigatorTags.HasTag(FBmrGameStateTag::InGame))
+	{
+		RemoveAppliedReviveGameplayEffect();
+	}
+
+	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
+	{
+		GrantPlayerReviveEffect();
+	}
 }
 
 // Returns the Ability System Component from the Player State
@@ -81,6 +103,10 @@ UAbilitySystemComponent* UGrsPlayerStateComponent::GetAbilitySystemComponent() c
 	const ABmrPlayerState* InPlayerState = GetCurrentPlayerState();
 	return InPlayerState ? InPlayerState->GetAbilitySystemComponent() : nullptr;
 }
+
+/*********************************************************************************************
+ * Revive ability
+ **********************************************************************************************/
 
 // Apply review ability that will restore regular player character
 void UGrsPlayerStateComponent::RevivePlayerCharacter(ABmrPawn* PlayerCharacter)
@@ -165,10 +191,13 @@ void UGrsPlayerStateComponent::RemoveAppliedReviveGameplayEffect()
 	}
 }
 
+/*********************************************************************************************
+ * Bomb spawning ability that automatically explodes after a certain time
+ **********************************************************************************************/
+
 // Spawn bomb on target location
 void UGrsPlayerStateComponent::UseSpawnBomb(FBmrCell TargetCell, const AActor* TargetInstigator)
 {
-	
 	FGameplayEventData EventData;
 	EventData.Instigator = TargetInstigator;
 	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(TargetCell);

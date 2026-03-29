@@ -42,6 +42,10 @@ protected:
 	/** Starting point once whole module is ready(loaded) to be initialized */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnInitialize(const struct FGameplayEventData& Payload);
+	
+	/** Listen game states to grant revive ability for player character  */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void OnGameStateChanged(const struct FGameplayEventData& Payload);
 
 	/** Returns the Ability System Component from the Player State.
 	 * In blueprints, call 'Get Ability System Component' as interface function. */

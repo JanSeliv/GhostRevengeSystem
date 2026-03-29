@@ -68,7 +68,7 @@ void UGrsPawnComponent::BeginPlay()
 void UGrsPawnComponent::OnUnregister()
 {
 	Super::OnUnregister();
-	
+
 	UGRSWorldSubSystem::Get().UnRegisterPawnComponent(this);
 
 	if (GrsPawnPoolManagerHandlers.Num() > 0)
@@ -82,30 +82,9 @@ void UGrsPawnComponent::OnUnregister()
 // A pawn could be loaded/replicated faster than MGF(GFP) is fully loaded therefore waiting for whole module to be initialized is required
 void UGrsPawnComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
-	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
-
 	if (GetOwner()->HasAuthority())
 	{
 		AddGhostCharacter();
-	}
-}
-
-// Listen game states to grant revive ability for player character
-void UGrsPawnComponent::OnGameStateChanged_Implementation(const struct FGameplayEventData& Payload)
-{
-	if (!GetBmrPawnChecked().IsPlayerControlled())
-	{
-		return;
-	}
-
-	if (!Payload.InstigatorTags.HasTag(FBmrGameStateTag::InGame))
-	{
-		GetGrsPlayerStateComponentChecked()->RemoveAppliedReviveGameplayEffect();
-	}
-
-	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
-	{
-		GetGrsPlayerStateComponentChecked()->GrantPlayerReviveEffect();
 	}
 }
 
