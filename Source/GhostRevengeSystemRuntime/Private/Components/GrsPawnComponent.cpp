@@ -135,6 +135,15 @@ void UGrsPawnComponent::OnTakeActorsFromPoolCompleted(const TArray<FPoolObjectDa
 		GhostCharacter.InitPawn(GetBmrPawn()->GetPlayerId());
 		GhostCharacter.RegisterPawnComponent(this);
 
+		FBmrCell ActorSpawnLocation;
+		float CellSize = FBmrCell::CellSize + (FBmrCell::CellSize / 2);
+
+		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopLeft);
+		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X - CellSize;
+		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+
+		GhostCharacter.SetActorLocation(ActorSpawnLocation);
+
 		// we can path a current local player since it needed only for the skin init
 		// GhostCharacter.OnGhostEliminatesPlayer.AddUniqueDynamic(this, &ThisClass::OnGhostEliminatesPlayer);
 		GhostCharacter.OnGhostRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::OnGhostRemovedFromLevel);
