@@ -6,12 +6,12 @@
 #include "AbilitySystemGlobals.h"
 #include "Actors/BmrPawn.h"
 #include "Components/GrsPlayerStateComponent.h"
-#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "PoolManagerSubsystem.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
+#include "Subsystems/GlobalMessageSubsystem.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 class UGRSWorldSubSystem;

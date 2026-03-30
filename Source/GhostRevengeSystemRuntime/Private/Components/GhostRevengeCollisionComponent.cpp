@@ -10,8 +10,8 @@
 // Bmr
 #include "Controllers/BmrPlayerController.h"
 #include "GameFramework/BmrGameState.h"
-#include "GlobalMessageSubsystem.h"
 #include "Structures/BmrGameplayTags.h"
+#include "Subsystems/GlobalMessageSubsystem.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
