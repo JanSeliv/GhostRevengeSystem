@@ -219,33 +219,3 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
 };
-
-/** Helper macro for binding to GhostRevengeSystem is initialized.
- * @param Obj Object that owns the callback function
- * @param Function Callback function to bind (signature: void Function(const FGameplayEventData& Payload)) */
-#define BIND_ON_INITIALIZE(Obj, Function) \
-	INTERNAL_BIND_Initialize(GrsGameplayTags::Event::GameFeaturePluginReady, Obj, Function)
-
-/*********************************************************************************************
- * Internal
- ********************************************************************************************* */
-
-/** Internal Helper macro for binding to GhostRevengeSystem is ready via Async Message System (aka Lyra's Gameplay Message Router). */
-#define INTERNAL_BIND_Initialize(InEventTag, Obj, Function)                            \
-	{                                                                                  \
-		TWeakObjectPtr WeakObj(Obj);                                                   \
-		UBmrGameplayMessageSubsystem::RegisterListener(Obj, InEventTag,                \
-		    [WeakObj](const FGameplayEventData& Payload)                               \
-		{                                                                              \
-			if (WeakObj.IsValid() && UGRSWorldSubSystem::Get(WeakObj.Get()).IsReady()) \
-			{                                                                          \
-				(WeakObj.Get()->*(&Function))(Payload);                                \
-			}                                                                          \
-		});                                                                            \
-		if (UGRSWorldSubSystem::Get(Obj).IsReady())                                    \
-		{                                                                              \
-			FGameplayEventData AutoPayload;                                            \
-			AutoPayload.EventTag = InEventTag;                                         \
-			(Obj->*(&Function))(AutoPayload);                                          \
-		}                                                                              \
-	}
