@@ -82,7 +82,12 @@ void UGrsPawnComponent::OnUnregister()
 		}
 
 		GrsPawnPoolManagerHandlers.Empty();
-		UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
+
+		FPoolObjectHandle GrsObjectHandle = UPoolManagerSubsystem::Get().FindPoolHandleByObject(AGRSPlayerCharacter::StaticClass());
+		if (GrsObjectHandle.IsValid())
+		{
+			UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
+		}
 	}
 }
 
