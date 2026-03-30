@@ -11,8 +11,8 @@
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "FunctionPickerData/FunctionPickerTemplate.h"
-#include "GhostRevengeUtils.h"
 #include "GameFramework/BmrPlayerState.h"
+#include "GhostRevengeUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "MyUtilsLibraries/InputUtilsLibrary.h"
@@ -105,7 +105,6 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 
 			// --- Clear splines
 			GhostCharacter->ClearTrajectorySplines();
-			GhostCharacter-> ApplyExplosionGameplayEffect();
 		}
 	}
 
@@ -116,7 +115,6 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 		if (GhostCharacter)
 		{
 			SetManagedInputContextEnabled(GetPlayerController(), false);
-			GhostCharacter->RemoveExplosionGameplayEffect();
 		}
 	}
 }

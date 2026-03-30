@@ -73,7 +73,14 @@ void UGrsPawnComponent::OnUnregister()
 
 	if (GrsPawnPoolManagerHandlers.Num() > 0)
 	{
-		UPoolManagerSubsystem::Get().ReturnToPoolArray(GrsPawnPoolManagerHandlers);
+		for (FPoolObjectHandle GrsPoolObjectHandle : GrsPawnPoolManagerHandlers)
+		{
+			if (UPoolManagerSubsystem::Get().FindPoolObjectByHandle(GrsPoolObjectHandle).IsValid())
+			{
+				UPoolManagerSubsystem::Get().ReturnToPool(GrsPoolObjectHandle);
+			}
+		}
+
 		GrsPawnPoolManagerHandlers.Empty();
 		UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
 	}

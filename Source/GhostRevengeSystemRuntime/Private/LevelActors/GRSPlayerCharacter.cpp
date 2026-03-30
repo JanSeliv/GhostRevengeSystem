@@ -198,6 +198,14 @@ void AGRSPlayerCharacter::BeginPlay()
 	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
 }
 
+// Returns the Ability System Component from the Player State
+UAbilitySystemComponent* AGRSPlayerCharacter::GetAbilitySystemComponent() const
+{
+	
+	const ABmrPlayerState* InPlayerState = UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked();
+	return InPlayerState ? InPlayerState->GetAbilitySystemComponent() : nullptr;
+}
+
 void AGRSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -640,9 +648,13 @@ void AGRSPlayerCharacter::ThrowProjectile()
 void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 {
 	const FBmrCell& SpawnBombCell = UBmrCellUtilsLibrary::GetNearestFreeCell(TargetCell);
-	TObjectPtr<const AActor> TargetInstigator = GetInstigator();
-
-	UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->UseSpawnBomb(SpawnBombCell, TargetInstigator);
+	
+	// Activate bomb ability
+	FGameplayEventData EventData;
+	EventData.EventTag = UGRSDataAsset::Get().GetTriggerBombTag();
+	EventData.Instigator = this;
+	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(SpawnBombCell);
+	UBmrGameplayMessageSubsystem::BroadcastMessage(EventData);
 }
 
 //  Clean up the character for the MGF unload

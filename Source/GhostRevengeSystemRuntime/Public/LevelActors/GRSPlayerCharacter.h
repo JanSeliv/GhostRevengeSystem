@@ -32,7 +32,8 @@ enum class EGRSCharacterSide : uint8
  * Copy the died player mesh and skin.
  */
 UCLASS()
-class GHOSTREVENGESYSTEMRUNTIME_API AGRSPlayerCharacter : public ACharacter
+class GHOSTREVENGESYSTEMRUNTIME_API AGRSPlayerCharacter : public ACharacter,
+                                                          public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -129,6 +130,11 @@ public:
 protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
+	
+	/** Returns the Ability System Component from the Player State.
+	 * In blueprints, call 'Get Ability System Component' as interface function. */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	/** Returns properties that are replicated for the lifetime of the actor channel. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -234,15 +240,14 @@ protected:
 	TObjectPtr<class AGRSBombProjectile> BombProjectileInternal = nullptr;
 
 public:
-	
 	/** Add a mesh to the last element of the predict Projectile path results */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void AddMeshToEndProjectilePath(FVector Location);
-	
+
 	/** Applies spawn bomb gameplay effect */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void ApplyExplosionGameplayEffect();
-	
+
 	/** Removes spawn bomb gameplay effect */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RemoveExplosionGameplayEffect();

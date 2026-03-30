@@ -76,6 +76,8 @@ void UGrsPlayerStateComponent::OnUnregister()
 void UGrsPlayerStateComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
 	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
+	
+	ApplyBombSpawningGameplayEffect();
 }
 
 // Listen game states to grant revive ability for player character
@@ -198,10 +200,7 @@ void UGrsPlayerStateComponent::RemoveAppliedReviveGameplayEffect()
 // Spawn bomb on target location
 void UGrsPlayerStateComponent::UseSpawnBomb(FBmrCell TargetCell, const AActor* TargetInstigator)
 {
-	FGameplayEventData EventData;
-	EventData.Instigator = TargetInstigator;
-	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(TargetCell);
-	GetAbilitySystemComponent()->HandleGameplayEvent(UGRSDataAsset::Get().GetTriggerBombTag(), &EventData);
+	
 }
 
 //  To apply explosion (bomb spawning) gameplay effect

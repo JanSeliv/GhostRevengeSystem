@@ -22,27 +22,26 @@ public:
 	/** Sets default values for this component's properties */
 	UGrsPlayerStateComponent();
 
-protected:
-	
 	/** Returns the player state from attached BmrPlayerState component */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	class ABmrPlayerState* GetCurrentPlayerState() const;
 	class ABmrPlayerState* GetCurrentPlayerStateChecked() const;
-	
+
 	/** Checks if player state has authority */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	bool HasAuthority();
-	
+
+protected:
 	/** Called when the game starts */
 	virtual void BeginPlay() override;
-	
+
 	/** Called as part of MGF(GFP) lifecycle when unload happens */
-	virtual  void OnUnregister() override;
+	virtual void OnUnregister() override;
 
 	/** Starting point once whole module is ready(loaded) to be initialized */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnInitialize(const struct FGameplayEventData& Payload);
-	
+
 	/** Listen game states to grant revive ability for player character  */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
@@ -81,7 +80,7 @@ public:
 	/** Spawn bomb on target location */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void UseSpawnBomb(FBmrCell TargetCell, const AActor* TargetInstigator);
-	
+
 	/** Returns handle of current applied ability effect  */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	FORCEINLINE FActiveGameplayEffectHandle GetAppliedBombSpawningEffectHandle() const { return AppliedBombSpawnEffectHandle; }

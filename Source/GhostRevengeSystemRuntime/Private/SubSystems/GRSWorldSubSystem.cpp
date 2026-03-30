@@ -362,7 +362,9 @@ UGrsPlayerStateComponent* UGRSWorldSubSystem::GetPlayerStateComponent(int32 Targ
 		{
 			return nullptr;
 		}
-
+		
+		int32 fuckingPlayerID = BmrPlayerState->GetPlayerId();
+		UE_LOG(LogTemp, Warning, TEXT("FUCKING PLAYER ID IS: %i"), fuckingPlayerID);
 		if (BmrPlayerState->GetPlayerId() == TargetPlayerID)
 		{
 			return PlayerStateComponent;
