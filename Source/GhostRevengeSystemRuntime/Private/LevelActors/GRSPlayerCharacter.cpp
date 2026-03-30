@@ -201,7 +201,6 @@ void AGRSPlayerCharacter::BeginPlay()
 // Returns the Ability System Component from the Player State
 UAbilitySystemComponent* AGRSPlayerCharacter::GetAbilitySystemComponent() const
 {
-	
 	const ABmrPlayerState* InPlayerState = UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked();
 	return InPlayerState ? InPlayerState->GetAbilitySystemComponent() : nullptr;
 }
@@ -242,11 +241,11 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	// --- default params required for the fist start to have character prepared
 	SetPlayerMeshData();
 
-	// InitializePlayerName(UBmrBlueprintFunctionLibrary::GetLocalPawn());
+	UpdatePlayerName(UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked());
 	// InitializePlayerArrow(UBmrBlueprintFunctionLibrary::GetLocalPawn());
 
 	// --- Init character visuals (animations, skin)
-	SetCharacterVisual(UBmrBlueprintFunctionLibrary::GetPawn(PlayerID));
+	SetCharacterVisual(&UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked());
 
 	// --- ghost added to level
 	OnGhostAddedToLevel.Broadcast();
@@ -267,8 +266,6 @@ void AGRSPlayerCharacter::OnPlayerDeadChanged_Implementation(bool bIsDead)
 
 	ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
 	checkf(InPlayerState, TEXT("ERROR: [%i] %hs:\n'InPlayerState' is null!"), __LINE__, __FUNCTION__);
-
-	UpdatePlayerName(InPlayerState);
 }
 
 // Listen game states to remove ghost character from level
@@ -325,9 +322,10 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 	// --- change visibility for this character
 	// --- update collision settings
 	// --- activate arrow
-	// --- just refresh visibility of player name needed, to be changed
-	ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
-	UpdatePlayerName(BmrPlayerState);
+
+	// --- just refresh visibility of player name needed, to be changed. Player name to be set by default
+	// ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
+	// UpdatePlayerName(BmrPlayerState);
 }
 
 // Called right before owner actor going to remove from the Generated Map, on both server and clients.
@@ -468,7 +466,7 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 // Set and apply skeletal mesh for ghost player. Copy mesh from current player
 void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 {
-	ABmrPawn* PlayerCharacter = UBmrBlueprintFunctionLibrary::GetPawn(PlayerID);
+	ABmrPawn* PlayerCharacter = &UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked(); 
 	checkf(PlayerCharacter, TEXT("ERROR: [%i] %hs:\n'PlayerCharacter' is null!"), __LINE__, __FUNCTION__);
 
 	const EBmrLevelType PlayerFlag = UBmrBlueprintFunctionLibrary::GetLevelType();
@@ -648,7 +646,7 @@ void AGRSPlayerCharacter::ThrowProjectile()
 void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 {
 	const FBmrCell& SpawnBombCell = UBmrCellUtilsLibrary::GetNearestFreeCell(TargetCell);
-	
+
 	// Activate bomb ability
 	FGameplayEventData EventData;
 	EventData.EventTag = UGRSDataAsset::Get().GetTriggerBombTag();
