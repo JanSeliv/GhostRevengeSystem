@@ -7,12 +7,9 @@
 
 // Bmr
 #include "Actors/BmrPawn.h"
-#include "GameFramework/BmrGameState.h"
+#include "GlobalMessageSubsystem.h"
 #include "MyUtilsLibraries/UtilsLibrary.h"
 #include "Structures/BmrGameplayTags.h"
-#include "Subsystems/BmrGameplayMessageSubsystem.h"
-#include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
-#include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
@@ -59,7 +56,7 @@ void UGRSWorldSubSystem::OnWorldBeginPlay(UWorld& InWorld)
 void UGRSWorldSubSystem::OnWorldSubSystemInitialize_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("UGRSWorldSubSystem BeginPlay OnWorldSubSystemInitialize_Implementation --- %s"), *this->GetName());
-	BIND_ON_LOCAL_PAWN_READY(this, ThisClass::OnLocalPawnReady);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::Player_LocalPawnReady, this, &ThisClass::OnLocalPawnReady);
 }
 
 // Called when the local player character is spawned, possessed, and replicated
@@ -69,7 +66,7 @@ void UGRSWorldSubSystem::OnLocalPawnReady_Implementation(const FGameplayEventDat
 
 	TryInit(); // try to initialize
 
-	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::GameState_Changed, this, &ThisClass::OnGameStateChanged);
 }
 
 // Checks if all components present and invokes initialization
@@ -80,7 +77,7 @@ void UGRSWorldSubSystem::TryInit()
 	{
 		FGameplayEventData EventData;
 		EventData.EventTag = GrsGameplayTags::Event::GameFeaturePluginReady;
-		UBmrGameplayMessageSubsystem::BroadcastMessage(EventData);
+		UGlobalMessageSubsystem::BroadcastGlobalMessage(EventData);
 	}
 }
 

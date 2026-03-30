@@ -8,16 +8,14 @@
 #include "SubSystems/GRSWorldSubSystem.h"
 
 // Bmr
-#include "Actors/BmrPawn.h"
 #include "Controllers/BmrPlayerController.h"
 #include "GameFramework/BmrGameState.h"
+#include "GlobalMessageSubsystem.h"
 #include "Structures/BmrGameplayTags.h"
-#include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // UE
-#include "Abilities/GameplayAbilityTypes.h"
 #include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -44,7 +42,7 @@ void UGhostRevengeCollisionComponent::BeginPlay()
 
 	// Binds to local character ready to guarantee that the player controller is initialized
 	// so we can safely use Widget's Subsystem
-	BIND_ON_LOCAL_PAWN_READY(this, ThisClass::OnLocalPawnReady);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::Player_LocalPawnReady, this, &ThisClass::OnLocalPawnReady);
 }
 
 // Clears all transient data created by this component.
@@ -75,7 +73,7 @@ void UGhostRevengeCollisionComponent::OnLocalPawnReady_Implementation(const FGam
 	WorldSubsystem.RegisterCollisionManagerComponent(this);
 	WorldSubsystem.OnWorldSubSystemInitialize();
 
-	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }
 
 // The spawner is considered as loaded only when the subsystem is loaded

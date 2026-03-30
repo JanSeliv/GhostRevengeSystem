@@ -2,7 +2,6 @@
 
 #include "Components/GrsPlayerStateComponent.h"
 
-#include "Abilities/GameplayAbilityTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Actors/BmrPawn.h"
@@ -10,12 +9,11 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/BmrGameState.h"
 #include "GameFramework/BmrPlayerState.h"
+#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
-#include "Structures/BmrGameplayTags.h"
 #include "Structures/BmrGameStateTag.h"
+#include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
-#include "Subsystems/BmrGameplayMessageSubsystem.h"
-#include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // Sets default values for this component's properties
@@ -52,7 +50,7 @@ void UGrsPlayerStateComponent::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("UGrsPlayerStateComponent::BeginPlay  --- %s - %s"), *this->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
 	WorldSubsystem.RegisterPlayerStateComponent(this);
-	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }
 
 //  Called as part of MGF(GFP) lifecycle when unload happens
@@ -75,8 +73,8 @@ void UGrsPlayerStateComponent::OnUnregister()
 // Starting point once whole module is ready(loaded) to be initialized
 void UGrsPlayerStateComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
-	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
-	
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::GameState_Changed, this, &ThisClass::OnGameStateChanged);
+
 	ApplyBombSpawningGameplayEffect();
 }
 

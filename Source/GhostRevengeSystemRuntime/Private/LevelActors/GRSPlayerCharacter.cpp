@@ -21,17 +21,15 @@
 #include "DataAssets/BmrPlayerDataAsset.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
-#include "GameFramework/BmrGameState.h"
 #include "GameFramework/BmrPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GhostRevengeUtils.h"
+#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSBombProjectile.h"
 #include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
-#include "Subsystems/BmrGameplayMessageSubsystem.h"
 #include "UI/Widgets/BmrPlayerNameWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
@@ -195,7 +193,7 @@ void AGRSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Log, TEXT("AGRSPlayerCharacter::OnInitialize ghost character  --- %s - %s"), *this->GetName(), this->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
-	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }
 
 // Returns the Ability System Component from the Player State
@@ -231,7 +229,7 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	AimingSphereComponent->SetVisibility(true);
 
 	// --- bind to  clear ghost data
-	BIND_ON_GAME_STATE_CHANGED(this, ThisClass::OnGameStateChanged);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::GameState_Changed, this, &ThisClass::OnGameStateChanged);
 
 	// --- bind to track player death status
 	// ABmrPlayerState* InPlayerState = GetPlayerState<ABmrPlayerState>();
@@ -652,7 +650,7 @@ void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 	EventData.EventTag = UGRSDataAsset::Get().GetTriggerBombTag();
 	EventData.Instigator = this;
 	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(SpawnBombCell);
-	UBmrGameplayMessageSubsystem::BroadcastMessage(EventData);
+	UGlobalMessageSubsystem::BroadcastGlobalMessage(EventData);
 }
 
 //  Clean up the character for the MGF unload

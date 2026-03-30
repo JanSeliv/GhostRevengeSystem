@@ -2,21 +2,16 @@
 
 #include "Components/GrsPawnComponent.h"
 
-#include "Abilities/GameplayAbilityTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Actors/BmrPawn.h"
 #include "Components/GrsPlayerStateComponent.h"
-#include "Data/GRSDataAsset.h"
-#include "GameFramework/BmrGameState.h"
+#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "PoolManagerSubsystem.h"
-#include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
-#include "Subsystems/BmrGameplayMessageSubsystem.h"
-#include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 class UGRSWorldSubSystem;
@@ -61,7 +56,7 @@ void UGrsPawnComponent::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("UGrsPawnComponent::BeginPlay  --- %s - %s"), *this->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
 	WorldSubsystem.RegisterPawnComponent(this);
-	BIND_ON_INITIALIZE(this, ThisClass::OnInitialize);
+	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }
 
 // Clears all transient data created by this component
