@@ -23,13 +23,13 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/BmrPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelActors/GRSBombProjectile.h"
 #include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
+#include "Subsystems/GlobalMessageSubsystem.h"
 #include "UI/Widgets/BmrPlayerNameWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
@@ -464,7 +464,7 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 // Set and apply skeletal mesh for ghost player. Copy mesh from current player
 void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 {
-	ABmrPawn* PlayerCharacter = &UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked(); 
+	ABmrPawn* PlayerCharacter = &UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked();
 	checkf(PlayerCharacter, TEXT("ERROR: [%i] %hs:\n'PlayerCharacter' is null!"), __LINE__, __FUNCTION__);
 
 	const EBmrLevelType PlayerFlag = UBmrBlueprintFunctionLibrary::GetLevelType();

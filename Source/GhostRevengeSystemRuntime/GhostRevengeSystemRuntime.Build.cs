@@ -30,7 +30,6 @@ public class GhostRevengeSystemRuntime : ModuleRules
 				, "GameplayAbilities" // Tags
 				// Bomber
 				, "MyUtils", "PoolManager", "FunctionPicker" // spawn ghost character
-				, "AsyncMessageSystem" // Aka Lyra's Gameplay Message Router
 			}
 		);
 	}

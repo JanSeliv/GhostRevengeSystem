@@ -7,9 +7,9 @@
 
 // Bmr
 #include "Actors/BmrPawn.h"
-#include "GlobalMessageSubsystem.h"
 #include "MyUtilsLibraries/UtilsLibrary.h"
 #include "Structures/BmrGameplayTags.h"
+#include "Subsystems/GlobalMessageSubsystem.h"
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"

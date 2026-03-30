@@ -9,11 +9,11 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/BmrGameState.h"
 #include "GameFramework/BmrPlayerState.h"
-#include "GlobalMessageSubsystem.h"
 #include "GrsGameplayTags.h"
 #include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
+#include "Subsystems/GlobalMessageSubsystem.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 // Sets default values for this component's properties
