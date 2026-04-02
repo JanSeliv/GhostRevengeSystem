@@ -31,13 +31,7 @@ public:
 protected:
 	/** Begin play of the subsystem */
 	void OnWorldBeginPlay(UWorld& InWorld) override;
-
-public:
-	/** Is called to initialize the world subsystem. It's a BeginPlay logic for the GRS module */
-	UFUNCTION(BlueprintNativeEvent, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void OnWorldSubSystemInitialize();
-
-protected:
+	
 	/** Called when the local player character is spawned, possessed, and replicated. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnLocalPawnReady(const struct FGameplayEventData& Payload);

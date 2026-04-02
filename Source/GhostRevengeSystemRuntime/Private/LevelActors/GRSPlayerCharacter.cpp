@@ -211,14 +211,6 @@ void AGRSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, PlayerID, Params);
 }
 
-// Native actor is destroyed event
-void AGRSPlayerCharacter::Destroyed()
-{
-	PerformCleanUp();
-
-	Super::Destroyed();
-}
-
 // The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point
 void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 {
@@ -375,8 +367,11 @@ void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 	// PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// --- Disable aiming point
-	AimingSphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AimingSphereComponent->SetVisibility(false);
+	if (AimingSphereComponent)
+	{
+		AimingSphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		AimingSphereComponent->SetVisibility(false);
+	}
 
 	UGRSWorldSubSystem::Get().SetRevivedPlayer(PossessedPlayerCharacter);
 	UGRSWorldSubSystem::Get().UnregisterGhostCharacter(this);

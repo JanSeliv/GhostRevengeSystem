@@ -50,11 +50,7 @@ UGRSWorldSubSystem& UGRSWorldSubSystem::Get(const UObject* WorldContextObject)
 void UGRSWorldSubSystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
-}
 
-// Is called to initialize the world subsystem. It's a BeginPlay logic for the GRS module
-void UGRSWorldSubSystem::OnWorldSubSystemInitialize_Implementation()
-{
 	UE_LOG(LogTemp, Log, TEXT("UGRSWorldSubSystem BeginPlay OnWorldSubSystemInitialize_Implementation --- %s"), *this->GetName());
 	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::Player_LocalPawnReady, this, &ThisClass::OnLocalPawnReady);
 }
@@ -87,6 +83,7 @@ bool UGRSWorldSubSystem::IsReady()
 	// todo: obtain max player param from Bmr core
 	int32 MaxPlayers = 4;
 
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: IsReady --- %s"), __LINE__, __FUNCTION__, CharacterManagerComponent && CollisionMangerComponent && PawnComponents.Num() == MaxPlayers ? TEXT("READY") : TEXT("NOT READY"));
 	return CharacterManagerComponent && CollisionMangerComponent && PawnComponents.Num() == MaxPlayers;
 }
 
@@ -153,12 +150,14 @@ bool UGRSWorldSubSystem::IsCollisionsSpawned()
 // Clears cached collision manager component
 void UGRSWorldSubSystem::UnregisterCollisionManagerComponent()
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- UnregisterCollisionManagerComponent"), __LINE__, __FUNCTION__);
 	CollisionMangerComponent = nullptr;
 }
 
 // Clear cached collisions
 void UGRSWorldSubSystem::ClearCollisions()
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- ClearCollisions"), __LINE__, __FUNCTION__);
 	if (LeftSideCollision)
 	{
 		LeftSideCollision->Destroy();
@@ -207,6 +206,7 @@ void UGRSWorldSubSystem::ResetRevivedPlayers()
 // Register character manager component
 void UGRSWorldSubSystem::RegisterCharacterManagerComponent(UGRSGhostCharacterManagerComponent* NewCharacterManagerComponent)
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- RegisterCharacterManagerComponent"), __LINE__, __FUNCTION__);
 	if (NewCharacterManagerComponent && NewCharacterManagerComponent != CharacterManagerComponent)
 	{
 		CharacterManagerComponent = NewCharacterManagerComponent;
@@ -287,6 +287,7 @@ void UGRSWorldSubSystem::UnRegisterPawnComponent(class UGrsPawnComponent* PawnCo
 // Clears cached character manager component
 void UGRSWorldSubSystem::UnregisterCharacterManagerComponent()
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- UnregisterCharacterManagerComponent"), __LINE__, __FUNCTION__);
 	CharacterManagerComponent = nullptr;
 }
 

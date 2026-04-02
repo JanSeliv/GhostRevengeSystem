@@ -32,7 +32,7 @@ UGhostRevengeCollisionComponent::UGhostRevengeCollisionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 
-	SetIsReplicatedByDefault(true);
+	SetIsReplicatedByDefault(false);
 }
 
 // Called when the game starts
@@ -40,6 +40,8 @@ void UGhostRevengeCollisionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- BeginPlay"), __LINE__, __FUNCTION__);
+	UE_LOG(LogTemp, Log, TEXT("--- %s - %s"), *this->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	// Binds to local character ready to guarantee that the player controller is initialized
 	// so we can safely use Widget's Subsystem
 	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::Player_LocalPawnReady, this, &ThisClass::OnLocalPawnReady);
@@ -49,6 +51,9 @@ void UGhostRevengeCollisionComponent::BeginPlay()
 void UGhostRevengeCollisionComponent::OnUnregister()
 {
 	Super::OnUnregister();
+
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnUnregister"), __LINE__, __FUNCTION__);
+	UE_LOG(LogTemp, Log, TEXT("--- CollisionPoolActorHandlersInternal Count: %d - %s"), CollisionPoolActorHandlersInternal.Num(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 
 	if (CollisionPoolActorHandlersInternal.Num() > 0)
 	{
@@ -71,7 +76,6 @@ void UGhostRevengeCollisionComponent::OnLocalPawnReady_Implementation(const FGam
 {
 	UGRSWorldSubSystem& WorldSubsystem = UGRSWorldSubSystem::Get();
 	WorldSubsystem.RegisterCollisionManagerComponent(this);
-	WorldSubsystem.OnWorldSubSystemInitialize();
 
 	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }

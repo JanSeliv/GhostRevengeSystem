@@ -62,15 +62,21 @@ void UGrsPawnComponent::BeginPlay()
 // Clears all transient data created by this component
 void UGrsPawnComponent::OnUnregister()
 {
-	Super::OnUnregister();
-
 	UGRSWorldSubSystem::Get().UnRegisterPawnComponent(this);
 
 	if (GrsPawnPoolManagerHandlers.Num() > 0)
 	{
 		for (FPoolObjectHandle GrsPoolObjectHandle : GrsPawnPoolManagerHandlers)
 		{
-			if (UPoolManagerSubsystem::Get().FindPoolObjectByHandle(GrsPoolObjectHandle).IsValid())
+			const FPoolObjectData& SpawnObject = UPoolManagerSubsystem::Get().FindPoolObjectByHandle(GrsPoolObjectHandle);
+			AGRSPlayerCharacter* GhostCharacter = &SpawnObject.GetChecked<AGRSPlayerCharacter>();
+			if (GhostCharacter)
+			{
+				GhostCharacter->PerformCleanUp();
+				GhostCharacter->ConditionalBeginDestroy();
+			}
+
+			if (SpawnObject.IsValid())
 			{
 				UPoolManagerSubsystem::Get().ReturnToPool(GrsPoolObjectHandle);
 			}
@@ -84,6 +90,8 @@ void UGrsPawnComponent::OnUnregister()
 			UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
 		}
 	}
+
+	Super::OnUnregister();
 }
 
 // A pawn could be loaded/replicated faster than MGF(GFP) is fully loaded therefore waiting for whole module to be initialized is required
