@@ -130,7 +130,10 @@ public:
 protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
-	
+
+	/** Overridable function called whenever this actor is being removed from a level. */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	/** Returns the Ability System Component from the Player State.
 	 * In blueprints, call 'Get Ability System Component' as interface function. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")

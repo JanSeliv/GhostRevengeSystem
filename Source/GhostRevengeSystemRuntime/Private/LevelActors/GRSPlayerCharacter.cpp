@@ -196,6 +196,14 @@ void AGRSPlayerCharacter::BeginPlay()
 	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(GrsGameplayTags::Event::GameFeaturePluginReady, this, &ThisClass::OnInitialize);
 }
 
+// Overridable function called whenever this actor is being removed from a level
+void AGRSPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
+
+	Super::EndPlay(EndPlayReason);
+}
+
 // Returns the Ability System Component from the Player State
 UAbilitySystemComponent* AGRSPlayerCharacter::GetAbilitySystemComponent() const
 {

@@ -88,15 +88,20 @@ bool UGRSWorldSubSystem::IsReady()
 }
 
 // Clears all transient data created by this subsystem.
-void UGRSWorldSubSystem::Deinitialize()
+void UGRSWorldSubSystem::OnWorldEndPlay(UWorld& InWorld)
 {
 	PerformCleanUp();
-	Super::Deinitialize();
+	Super::OnWorldEndPlay(InWorld);
 }
 
 // Cleanup used on unloading module to remove properties that should not be available by other objects.
 void UGRSWorldSubSystem::PerformCleanUp()
 {
+	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
+
+	// Clear cached GameFeaturePluginReady so late-binding listeners receive fresh data on GRS load
+	UGlobalMessageSubsystem::ClearCachedMessages(GrsGameplayTags::Event::GameFeaturePluginReady);
+
 	UnregisterCharacterManagerComponent();
 	UnregisterCollisionManagerComponent();
 	ClearGhostCharacters();

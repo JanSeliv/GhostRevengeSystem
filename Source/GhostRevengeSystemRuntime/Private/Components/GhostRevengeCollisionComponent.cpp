@@ -55,6 +55,8 @@ void UGhostRevengeCollisionComponent::OnUnregister()
 	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnUnregister"), __LINE__, __FUNCTION__);
 	UE_LOG(LogTemp, Log, TEXT("--- CollisionPoolActorHandlersInternal Count: %d - %s"), CollisionPoolActorHandlersInternal.Num(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 
+	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
+
 	if (CollisionPoolActorHandlersInternal.Num() > 0)
 	{
 		UPoolManagerSubsystem::Get().ReturnToPoolArray(CollisionPoolActorHandlersInternal);

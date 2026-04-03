@@ -40,14 +40,14 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void TryInit();
 
-public:
 	/** Clears all transient data created by this subsystem. */
-	virtual void Deinitialize() override;
+	virtual void OnWorldEndPlay(UWorld& InWorld) override;
 
 	/** Cleanup used on unloading module to remove properties that should not be available by other objects. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void PerformCleanUp();
 
+public:
 	/** Checks if the system is ready to load */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	bool IsReady();
