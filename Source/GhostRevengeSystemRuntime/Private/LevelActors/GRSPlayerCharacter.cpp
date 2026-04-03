@@ -24,8 +24,6 @@
 #include "GameFramework/BmrPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GrsGameplayTags.h"
-#include "Kismet/GameplayStatics.h"
-#include "LevelActors/GRSBombProjectile.h"
 #include "Structures/BmrGameStateTag.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
@@ -225,6 +223,7 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 	GetMeshChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// --- Activate aiming point
+	checkf(AimingSphereComponent, TEXT("ERROR: [%i] %hs:\n'AimingSphereComponent' is null!"), __LINE__, __FUNCTION__);
 	AimingSphereComponent->SetMaterial(0, UGRSDataAsset::Get().GetAimingMaterial());
 	AimingSphereComponent->SetVisibility(true);
 
@@ -630,17 +629,6 @@ void AGRSPlayerCharacter::ThrowProjectile()
 	FVector LaunchVelocity = ThrowDirection * 100;
 
 	ClearTrajectorySplines();
-
-	// Spawn projectile and launch projectile
-	if (BombProjectileInternal == nullptr)
-	{
-		// BombProjectileInternal = GetWorld()->SpawnActor<AGRSBombProjectile>(UGRSDataAsset::Get().GetProjectileClass(), SpawnLocation, GetActorRotation());
-	}
-
-	if (BombProjectileInternal)
-	{
-		// BombProjectileInternal->Launch(LaunchVelocity);
-	}
 }
 
 // Spawn bomb on aiming sphere position.
@@ -659,44 +647,14 @@ void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 //  Clean up the character for the MGF unload
 void AGRSPlayerCharacter::PerformCleanUp()
 {
-	if (UCapsuleComponent* RootCapsuleComponent = GetCapsuleComponent())
-	{
-		RootCapsuleComponent->DestroyComponent();
-	}
-
-	if (UMovementComponent* MovementComponent = GetMovementComponent())
-	{
-		MovementComponent->DestroyComponent();
-	}
-
-	if (ProjectileSplineComponentInternal)
-	{
-		ProjectileSplineComponentInternal->DestroyComponent();
-		ProjectileSplineComponentInternal = nullptr;
-	}
-
 	if (MeshComponentInternal)
 	{
 		MeshComponentInternal->DestroyComponent();
 		MeshComponentInternal = nullptr;
 	}
 
-	if (BombProjectileInternal)
-	{
-		BombProjectileInternal->Destroy();
-		BombProjectileInternal = nullptr;
-	}
-
-	if (AimingSphereComponent)
-	{
-		AimingSphereComponent->DestroyComponent();
-		AimingSphereComponent = nullptr;
-	}
-
-	if (PlayerName3DWidgetComponentInternal)
-	{
-		PlayerName3DWidgetComponentInternal = nullptr;
-	}
+	// Components created via CreateDefaultSubobject must NOT cleanup, they are defaults this actor:
+	// ProjectileSplineComponentInternal, AimingSphereComponent, PlayerName3DWidgetComponentInternal
 
 	OwningPawnComponent = nullptr;
 	PossessedPlayerCharacter = nullptr;
