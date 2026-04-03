@@ -58,6 +58,8 @@ void UGrsPlayerStateComponent::OnUnregister()
 {
 	Super::OnUnregister();
 
+	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
+
 	RemoveAppliedReviveGameplayEffect();
 	RemoveBombSpawningGameplayEffect();
 

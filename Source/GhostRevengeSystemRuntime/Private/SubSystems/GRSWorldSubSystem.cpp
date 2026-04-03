@@ -1,4 +1,4 @@
-﻿// Copyright (c) Valerii Rotermel & Yevhenii Selivanov
+// Copyright (c) Valerii Rotermel & Yevhenii Selivanov
 
 #include "SubSystems/GRSWorldSubSystem.h"
 
@@ -46,12 +46,10 @@ UGRSWorldSubSystem& UGRSWorldSubSystem::Get(const UObject* WorldContextObject)
 	return *ThisSubsystem;
 }
 
-// Called when world is ready to start gameplay before the game mode transitions to the correct state and call BeginPlay on all actors
-void UGRSWorldSubSystem::OnWorldBeginPlay(UWorld& InWorld)
+// Subscribes to local pawn ready event
+void UGRSWorldSubSystem::OnGameFeatureInitialize_Implementation()
 {
-	Super::OnWorldBeginPlay(InWorld);
-
-	UE_LOG(LogTemp, Log, TEXT("UGRSWorldSubSystem BeginPlay OnWorldSubSystemInitialize_Implementation --- %s"), *this->GetName());
+	UE_LOG(LogTemp, Log, TEXT("UGRSWorldSubSystem OnGameFeatureActivated --- %s"), *this->GetName());
 	UGlobalMessageSubsystem::CallOrStartListeningForGlobalMessage(BmrGameplayTags::Event::Player_LocalPawnReady, this, &ThisClass::OnLocalPawnReady);
 }
 
@@ -87,16 +85,20 @@ bool UGRSWorldSubSystem::IsReady()
 	return CharacterManagerComponent && CollisionMangerComponent && PawnComponents.Num() == MaxPlayers;
 }
 
-// Clears all transient data created by this subsystem.
-void UGRSWorldSubSystem::Deinitialize()
+// Clears all transient data created by this subsystem
+void UGRSWorldSubSystem::OnGameFeatureDeinitialize_Implementation()
 {
 	PerformCleanUp();
-	Super::Deinitialize();
 }
 
 // Cleanup used on unloading module to remove properties that should not be available by other objects.
 void UGRSWorldSubSystem::PerformCleanUp()
 {
+	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
+
+	// Clear cached GameFeaturePluginReady so late-binding listeners receive fresh data on GRS load
+	UGlobalMessageSubsystem::ClearCachedMessages(GrsGameplayTags::Event::GameFeaturePluginReady);
+
 	UnregisterCharacterManagerComponent();
 	UnregisterCollisionManagerComponent();
 	ClearGhostCharacters();

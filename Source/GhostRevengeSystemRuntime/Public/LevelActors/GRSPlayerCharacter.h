@@ -32,8 +32,8 @@ enum class EGRSCharacterSide : uint8
  * Copy the died player mesh and skin.
  */
 UCLASS()
-class GHOSTREVENGESYSTEMRUNTIME_API AGRSPlayerCharacter : public ACharacter,
-                                                          public IAbilitySystemInterface
+class GHOSTREVENGESYSTEMRUNTIME_API AGRSPlayerCharacter : public ACharacter
+    , public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -130,7 +130,10 @@ public:
 protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
-	
+
+	/** Overridable function called whenever this actor is being removed from a level. */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	/** Returns the Ability System Component from the Player State.
 	 * In blueprints, call 'Get Ability System Component' as interface function. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
@@ -138,7 +141,6 @@ protected:
 
 	/** Returns properties that are replicated for the lifetime of the actor channel. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
 
 	/** The player character could be replicated faster than MGF(GFP) is loaded on client so the only we have to wait/check for subsystem to initialize as it is central loading point */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
@@ -232,10 +234,6 @@ protected:
 	/** Aiming sphere used when a player aiming*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem")
 	class UStaticMeshComponent* AimingSphereComponent;
-
-	/** Projectile to be spawned once bomb is ready to be thrown */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem")
-	TObjectPtr<class AGRSBombProjectile> BombProjectileInternal = nullptr;
 
 public:
 	/** Add a mesh to the last element of the predict Projectile path results */

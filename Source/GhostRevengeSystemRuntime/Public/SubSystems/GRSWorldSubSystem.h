@@ -1,9 +1,8 @@
-﻿// Copyright (c) Valerii Rotermel & Yevhenii Selivanov
+// Copyright (c) Valerii Rotermel & Yevhenii Selivanov
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
+#include "Subsystems/ModularGameFeaturePluginSubsystem.h"
 
 #include "GRSWorldSubSystem.generated.h"
 
@@ -13,7 +12,7 @@ enum class EGRSCharacterSide : uint8;
  * Implements the world subsystem to access different components in the module
  */
 UCLASS(BlueprintType, Blueprintable)
-class GHOSTREVENGESYSTEMRUNTIME_API UGRSWorldSubSystem : public UWorldSubsystem
+class GHOSTREVENGESYSTEMRUNTIME_API UGRSWorldSubSystem : public UModularGameFeaturePluginSubsystem
 {
 	GENERATED_BODY()
 
@@ -29,9 +28,12 @@ public:
 	static UGRSWorldSubSystem& Get(const UObject* WorldContextObject);
 
 protected:
-	/** Begin play of the subsystem */
-	void OnWorldBeginPlay(UWorld& InWorld) override;
-	
+	/** Subscribes to local pawn ready event */
+	virtual void OnGameFeatureInitialize_Implementation() override;
+
+	/** Clears all transient data created by this subsystem */
+	virtual void OnGameFeatureDeinitialize_Implementation() override;
+
 	/** Called when the local player character is spawned, possessed, and replicated. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnLocalPawnReady(const struct FGameplayEventData& Payload);
@@ -40,14 +42,11 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void TryInit();
 
-public:
-	/** Clears all transient data created by this subsystem. */
-	virtual void Deinitialize() override;
-
 	/** Cleanup used on unloading module to remove properties that should not be available by other objects. */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void PerformCleanUp();
 
+public:
 	/** Checks if the system is ready to load */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	bool IsReady();
