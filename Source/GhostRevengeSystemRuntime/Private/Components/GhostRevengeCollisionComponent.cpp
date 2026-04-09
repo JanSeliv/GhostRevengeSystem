@@ -61,7 +61,6 @@ void UGhostRevengeCollisionComponent::OnUnregister()
 	{
 		UPoolManagerSubsystem::Get().ReturnToPoolArray(CollisionPoolActorHandlersInternal);
 		CollisionPoolActorHandlersInternal.Empty();
-		UPoolManagerSubsystem::Get().EmptyPool(UGRSDataAsset::Get().GetCollisionsAssetClass());
 	}
 
 	// --- perform clean up from subsystem MGF is not possible so we have to call directly to clean cached references
