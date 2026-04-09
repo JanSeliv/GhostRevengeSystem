@@ -19,6 +19,8 @@
 #include "Controllers/BmrPlayerController.h"
 #include "Data/GRSDataAsset.h"
 #include "DataAssets/BmrPlayerDataAsset.h"
+#include "DataRegistries/BmrPlayerRow.h"
+#include "DataRegistries/BmrPlayerSkinRow.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/BmrPlayerState.h"
@@ -32,8 +34,6 @@
 #include "UObject/ConstructorHelpers.h"
 #include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
-
-class UBmrPlayerRow;
 
 /*********************************************************************************************
  * Nickname component
@@ -452,7 +452,7 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 	{
 		return;
 	}
-	const int32 CurrentSkinIndex = MainCharacterMeshComponent->GetAppliedSkinIndex();
+	const FName CurrentSkinRowName = MainCharacterMeshComponent->GetAppliedSkinRowName();
 
 	UBmrSkeletalMeshComponent* CurrentMeshComponent = &GetMeshChecked();
 	if (!ensureMsgf(CurrentMeshComponent, TEXT("ASSERT: [%i] %hs:\n'CurrentMeshComponent' is not valid!"), __LINE__, __FUNCTION__))
@@ -460,7 +460,7 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 		return;
 	}
 	CurrentMeshComponent->InitSkeletalMesh(MainCharacterMeshComponent->GetMeshData());
-	CurrentMeshComponent->ApplySkinByIndex(CurrentSkinIndex);
+	CurrentMeshComponent->ApplySkinByRowName(CurrentSkinRowName);
 }
 
 // Set and apply skeletal mesh for ghost player. Copy mesh from current player
@@ -470,18 +470,17 @@ void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
 	checkf(PlayerCharacter, TEXT("ERROR: [%i] %hs:\n'PlayerCharacter' is null!"), __LINE__, __FUNCTION__);
 
 	const EBmrLevelType PlayerFlag = UBmrBlueprintFunctionLibrary::GetLevelType();
-	EBmrLevelType LevelType = PlayerFlag;
 
-	const UBmrPlayerRow* Row = UBmrPlayerDataAsset::Get().GetRowByLevelType<UBmrPlayerRow>(TO_ENUM(EBmrLevelType, LevelType));
+	const FBmrPlayerRow* Row = FBmrPlayerRow::GetRowByLevelType(PlayerFlag);
+	const FName RowName = FBmrPlayerRow::GetRowNameByLevelType(PlayerFlag);
 	if (!ensureMsgf(Row, TEXT("ASSERT: [%i] %hs:\n'Row' is not found!"), __LINE__, __FUNCTION__))
 	{
 		return;
 	}
 
-	const int32 SkinsNum = Row->GetSkinTexturesNum();
-	FBmrMeshData MeshData;
-	MeshData.Row = Row;
-	MeshData.SkinIndex = PlayerCharacter->GetPlayerId() % SkinsNum;
+	FBmrMeshData MeshData = FBmrMeshData::Empty;
+	MeshData.RowName = RowName;
+	MeshData.SkinRowName = FBmrPlayerSkinRow::GetSkinRowName(Row->PlayerTag, PlayerCharacter->GetPlayerId());
 	GetMeshChecked().InitSkeletalMesh(MeshData);
 }
 
