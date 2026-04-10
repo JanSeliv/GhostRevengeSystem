@@ -33,7 +33,7 @@ public:
 
 	/** Returns current possessed pawn */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[GhostRevengeSystem]")
-	APawn* GetCurrentGhostCharacter() const;
+	APawn* GetCurrentPawn() const;
 	APawn& GetCurrentPawnChecked() const;
 
 protected:
@@ -43,9 +43,33 @@ protected:
 	/** Clears all transient data created by this component */
 	virtual void OnUnregister() override;
 
+	/** Listen game states to reset player controller state */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void OnGameStateChanged(const struct FGameplayEventData& Payload);
+
+	/** Unpossess current pawn from ghost to BmwPlayerPawn */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, AutoCreateRefTerm = "ActionValue"))
+	void UnpossessGhostPawn();
+
 public:
-	/** Clean up the character for the MGF unload */
-	void PerformCleanUp();
+	/** Disables current enhanced input and input bindings */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	void DisableInputs();
+
+	/*********************************************************************************************
+	 * Player Character
+	 **********************************************************************************************/
+protected:
+	/** Reference to a main player character that was eliminated (original player, not ghost)  */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Bmr Player Character"))
+	APawn* MainPlayerPawn = nullptr;
+
+public:
+	/** Store reference for possessed player pawn. Used to Unpossess controller back to the pawn
+	 * @param PlayerPawn is a main player pawn that ghost possesses.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	void SetPossessedPlayerPawn(APawn* PlayerPawn);
 
 	/*********************************************************************************************
 	 * Main functionality

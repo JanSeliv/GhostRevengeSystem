@@ -64,8 +64,4 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void OnTakeActorsFromPoolCompleted(const TArray<FPoolObjectData>& CreatedObjects);
 	
-	/** Called when the ghost character should be removed from level to unpossess controller */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void OnGhostRemovedFromLevel(class AController* CurrentController, class AGRSPlayerCharacter* GhostCharacter);
-	
 };

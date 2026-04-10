@@ -44,7 +44,6 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostAddedToLevel);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostPossesController_Client);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostPossesController_Server);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGhostRemovedFromLevel, AController*, CurrentPlayerController, AGRSPlayerCharacter*, GhostPlayerCharacter);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGhostEliminatesPlayer, FVector, AtLocation, AGRSPlayerCharacter*, GhostCharacter);
 
 	/** Is called when a ghost character added to level without possession */
@@ -58,10 +57,6 @@ public:
 	/** Is called when a ghost character is added to level and possessed a controller on server*/
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
 	FOnGhostPossesController_Server OnGhostPossesController_Server;
-
-	/** Is called when a ghost character removed from level */
-	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FOnGhostRemovedFromLevel OnGhostRemovedFromLevel;
 
 	/** Is called when a ghost characters kills another player */
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
@@ -160,7 +155,7 @@ protected:
 
 	/** Called right before owner actor going to remove from the Generated Map, on both server and clients.*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void OnPreRemovedFromLevel(class UBmrMapComponent* MapComponent, class UObject* DestroyCauser);
+	void OnPreRemovedFromLevel(class UBmrMapComponent* PlayerMapComponent, class UObject* DestroyCauser);
 
 	/** Remove ghost character from the level */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
@@ -169,20 +164,12 @@ protected:
 	/*********************************************************************************************
 	 * Player Character
 	 **********************************************************************************************/
-protected:
-	/** Reference to a player character that was eliminated (original player, not ghost)  */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Bmr Player Character"))
-	class ABmrPawn* PossessedPlayerCharacter = nullptr;
 
 	/** Player id of related BmrPlayerCharacter */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, ReplicatedUsing = "OnRep_PlayerID", Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Id of Bmr Player Character"))
 	int32 PlayerID = 0;
 
 public:
-	/** Retrieves current possessed character by ghost */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	FORCEINLINE class ABmrPawn* GetPossessedPlayerCharacter(AGRSPlayerCharacter* GhostCharacter) const { return GhostCharacter == this ? PossessedPlayerCharacter : nullptr; }
-
 	/** Called on client when player ID is changed. */
 	UFUNCTION()
 	void OnRep_PlayerID();

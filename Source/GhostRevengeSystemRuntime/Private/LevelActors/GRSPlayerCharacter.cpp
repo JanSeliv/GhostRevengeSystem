@@ -12,6 +12,7 @@
 #include "Components/BmrSkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/GRSGhostCharacterManagerComponent.h"
+#include "Components/GRSPlayerControllerComponent.h"
 #include "Components/GrsPawnComponent.h"
 #include "Components/GrsPlayerStateComponent.h"
 #include "Components/SplineComponent.h"
@@ -135,6 +136,7 @@ void AGRSPlayerCharacter::MovementComponentConfiguration()
 // Set up the capsule component of the character
 void AGRSPlayerCharacter::SetupCapsuleComponent()
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PerformCleanUp"), __LINE__, __FUNCTION__);
 	if (UCapsuleComponent* RootCapsuleComponent = GetCapsuleComponent())
 	{
 		// Setup collision to allow overlap players with each other, but block all other actors
@@ -199,6 +201,7 @@ void AGRSPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	UGlobalMessageSubsystem::StopListeningForAllGlobalMessages(this);
 
+	PerformCleanUp();
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -273,12 +276,6 @@ void AGRSPlayerCharacter::OnGameStateChanged_Implementation(const struct FGamepl
 		// -- release (unpossess) all ghosts
 		RemoveGhostCharacterFromMap();
 	}
-
-	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
-	{
-		UGRSWorldSubSystem::Get().ResetRevivedPlayers();
-		PossessedPlayerCharacter = nullptr;
-	}
 }
 
 // Activates ghost with required initiation
@@ -305,10 +302,12 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 		return;
 	}
 
-	if (PossessedPlayerCharacter != FromPlayerCharacter)
+	UGRSPlayerControllerComponent* GrsControllerComponent = Cast<UGRSPlayerControllerComponent>(PlayerController->GetComponentByClass(UGRSPlayerControllerComponent::StaticClass()));
+	if (!ensureMsgf(GrsControllerComponent, TEXT("ASSERT: [%i] %hs:\n'GrsControllerComponent' is not set!"), __LINE__, __FUNCTION__))
 	{
-		PossessedPlayerCharacter = FromPlayerCharacter;
+		return;
 	}
+	GrsControllerComponent->SetPossessedPlayerPawn(FromPlayerCharacter);
 
 	// --- authority calls:
 	TryPossessController(PlayerController);
@@ -326,9 +325,9 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 }
 
 // Called right before owner actor going to remove from the Generated Map, on both server and clients.
-void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComponent* MapComponent, class UObject* DestroyCauser)
+void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComponent* PlayerMapComponent, class UObject* DestroyCauser)
 {
-	ABmrPawn* PlayerCharacter = MapComponent->GetOwner<ABmrPawn>();
+	ABmrPawn* PlayerCharacter = PlayerMapComponent->GetOwner<ABmrPawn>();
 	if (!ensureMsgf(PlayerCharacter, TEXT("ASSERT: [%i] %hs:\n'PlayerCharacter' is not valid!"), __LINE__, __FUNCTION__)
 	    || PlayerCharacter->IsBotControlled()
 	    || !DestroyCauser)
@@ -355,7 +354,7 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 		OnGhostEliminatesPlayer.Broadcast(PlayerCharacter->GetActorLocation(), this);
 		UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostEliminatesPlayer.Broadcast"), __LINE__, __FUNCTION__);
 		RemoveGhostCharacterFromMap();
-
+		UGRSWorldSubSystem::Get().SetRevivedPlayer(PlayerCharacter);
 		UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->RevivePlayerCharacter(PlayerCharacter);
 	}
 
@@ -369,6 +368,7 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 // Remove ghost character from the level
 void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 {
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- RemoveGhostCharacterFromMap Started"), __LINE__, __FUNCTION__);
 	// --- move all functional part such as posses to ability
 	// --- possess back to player character for any cases
 	// PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
@@ -380,37 +380,11 @@ void AGRSPlayerCharacter::RemoveGhostCharacterFromMap()
 		AimingSphereComponent->SetVisibility(false);
 	}
 
-	UGRSWorldSubSystem::Get().SetRevivedPlayer(PossessedPlayerCharacter);
 	UGRSWorldSubSystem::Get().UnregisterGhostCharacter(this);
 
 	// --- change visibility of this pawn
 	// -- change nickname visibility of this pawn
 	// --- update collision mod of this pawn if needed
-
-	AController* CurrentController = GetController();
-	if (!PossessedPlayerCharacter || !HasAuthority() || !CurrentController)
-	{
-		return;
-	}
-
-	if (CurrentController->GetPawn())
-	{
-		// At first, unpossess previous controller
-		CurrentController->UnPossess();
-	}
-
-	// --- Always possess to player character when ghost character is no longer in control
-	CurrentController->Possess(PossessedPlayerCharacter);
-
-	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerController is %s"), __LINE__, __FUNCTION__, CurrentController ? TEXT("TRUE") : TEXT("FALSE"));
-	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerCharacter is %s"), __LINE__, __FUNCTION__, PossessedPlayerCharacter ? TEXT("TRUE") : TEXT("FALSE"));
-	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerCharacter: %s"), __LINE__, __FUNCTION__, *GetNameSafe(PossessedPlayerCharacter));
-
-	// --- reset player character reference
-	PossessedPlayerCharacter = nullptr;
-
-	OnGhostRemovedFromLevel.Broadcast(CurrentController, this);
-	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostRemovedFromLevel.Broadcast"), __LINE__, __FUNCTION__);
 }
 
 // Called on client when player ID is changed
@@ -646,6 +620,13 @@ void AGRSPlayerCharacter::SpawnBomb(FBmrCell TargetCell)
 //  Clean up the character for the MGF unload
 void AGRSPlayerCharacter::PerformCleanUp()
 {
+	RemoveGhostCharacterFromMap();
+
+	if (AimingSphereComponent)
+	{
+		AimingSphereComponent->EmptyOverrideMaterials();
+	}
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PerformCleanUp Started"), __LINE__, __FUNCTION__);
 	if (MeshComponentInternal)
 	{
 		MeshComponentInternal->DestroyComponent();
@@ -656,7 +637,6 @@ void AGRSPlayerCharacter::PerformCleanUp()
 	// ProjectileSplineComponentInternal, AimingSphereComponent, PlayerName3DWidgetComponentInternal
 
 	OwningPawnComponent = nullptr;
-	PossessedPlayerCharacter = nullptr;
 	PlayerID = 0;
 
 	// --- perform clean up from subsystem MGF is not possible so we have to call directly to clean cached references

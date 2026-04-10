@@ -71,12 +71,6 @@ void UGrsPawnComponent::OnUnregister()
 		for (FPoolObjectHandle GrsPoolObjectHandle : GrsPawnPoolManagerHandlers)
 		{
 			const FPoolObjectData& SpawnObject = PoolManager->FindPoolObjectByHandle(GrsPoolObjectHandle);
-			if (AGRSPlayerCharacter* GhostCharacter = SpawnObject.Get<AGRSPlayerCharacter>())
-			{
-				GhostCharacter->PerformCleanUp();
-				GhostCharacter->ConditionalBeginDestroy();
-			}
-
 			if (SpawnObject.IsValid())
 			{
 				PoolManager->ReturnToPool(GrsPoolObjectHandle);
@@ -85,6 +79,8 @@ void UGrsPawnComponent::OnUnregister()
 
 		GrsPawnPoolManagerHandlers.Empty();
 	}
+
+	UGRSWorldSubSystem::Get().UnRegisterPawnComponent(this);
 
 	Super::OnUnregister();
 }
@@ -141,32 +137,5 @@ void UGrsPawnComponent::OnTakeActorsFromPoolCompleted(const TArray<FPoolObjectDa
 		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
 
 		GhostCharacter.SetActorLocation(ActorSpawnLocation);
-
-		// we can path a current local player since it needed only for the skin init
-		// GhostCharacter.OnGhostEliminatesPlayer.AddUniqueDynamic(this, &ThisClass::OnGhostEliminatesPlayer);
-		GhostCharacter.OnGhostRemovedFromLevel.AddUniqueDynamic(this, &ThisClass::OnGhostRemovedFromLevel);
 	}
-}
-
-// Called when the ghost character should be removed from level to unpossess controller
-void UGrsPawnComponent::OnGhostRemovedFromLevel(class AController* CurrentController, class AGRSPlayerCharacter* GhostCharacter)
-{
-	if (!ensureMsgf(CurrentController, TEXT("ASSERT: [%i] %hs:\n'PlayerController' is not valid!"), __LINE__, __FUNCTION__)
-	    || !CurrentController->HasAuthority()
-	    || !GhostCharacter)
-	{
-		return;
-	}
-
-	ABmrPawn* PlayerCharacter = GhostCharacter->GetPossessedPlayerCharacter(GhostCharacter);
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	// --- move all functional part such as posses to ability
-	// --- possess back to player character for any cases
-	// PlayerCharacter->GetMeshComponentChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-	// PossessPlayerCharacter(CurrentController, PlayerCharacter);
-	// RevivePlayerCharacter(PlayerCharacter);
 }

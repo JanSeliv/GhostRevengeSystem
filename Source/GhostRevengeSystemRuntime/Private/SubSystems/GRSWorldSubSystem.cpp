@@ -13,11 +13,13 @@
 
 // UE
 #include "Abilities/GameplayAbilityTypes.h"
+#include "Components/GrsPawnComponent.h"
 #include "Components/GrsPlayerStateComponent.h"
 #include "Engine/Engine.h"
 #include "GameFramework/BmrPlayerState.h"
 #include "GrsGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
+#include "PoolManagerSubsystem.h"
 #include "Structures/BmrGameStateTag.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GRSWorldSubSystem)
@@ -378,6 +380,11 @@ UGrsPlayerStateComponent* UGRSWorldSubSystem::GetPlayerStateComponent(int32 Targ
 // Listen game states to switch character skin.
 void UGRSWorldSubSystem::OnGameStateChanged_Implementation(const FGameplayEventData& Payload)
 {
+	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
+	{
+		ResetRevivedPlayers();
+	}
+
 	/** EngGameState:
 //HUD = UWidgetsSubsystem::Get().GetWidgetByTag();
 if (!ensureMsgf(HUD, TEXT("ASSERT: [%i] %hs:\n'HUD' is not valid!"), __LINE__, __FUNCTION__))

@@ -43,7 +43,7 @@ ABmrPlayerController& UGRSPlayerControllerComponent::GetPlayerControllerChecked(
 }
 
 // Returns current possessed pawn
-APawn* UGRSPlayerControllerComponent::GetCurrentGhostCharacter() const
+APawn* UGRSPlayerControllerComponent::GetCurrentPawn() const
 {
 	return GetPlayerControllerChecked().GetPawn();
 }
@@ -67,12 +67,65 @@ void UGRSPlayerControllerComponent::BeginPlay()
 // Clears all transient data created by this component
 void UGRSPlayerControllerComponent::OnUnregister()
 {
+	DisableInputs();
+	// --- unpossess back to a pawn
+	UnpossessGhostPawn();
+
 	Super::OnUnregister();
-	PerformCleanUp();
 }
 
-// Clean up the character for the MGF unload
-void UGRSPlayerControllerComponent::PerformCleanUp()
+// Listen game states to reset player controller state
+void UGRSPlayerControllerComponent::OnGameStateChanged_Implementation(const struct FGameplayEventData& Payload)
+{
+	// --- reset currently possessed pawn
+	if (Payload.InstigatorTags.HasTag(FBmrGameStateTag::GameStarting))
+	{
+		MainPlayerPawn = nullptr;
+	}
+}
+
+// Unpossess current pawn from ghost to BmwPlayerPawn
+void UGRSPlayerControllerComponent::UnpossessGhostPawn()
+{
+	ABmrPlayerController* PlayerController = GetPlayerController();
+	if (!MainPlayerPawn
+	    || !PlayerController
+	    || !PlayerController->HasAuthority())
+	{
+		return;
+	}
+
+	// --- if pawn is empty possess back to BmrPawn
+	TObjectPtr<APawn> CurrentPossessedPawn = PlayerController->GetPawn();
+	if (!CurrentPossessedPawn)
+	{
+		// --- Always possess to player character when ghost character is no longer in control
+		PlayerController->Possess(MainPlayerPawn);
+	}
+	else
+	{
+		// --- if pawn is ghost unpossess back to BmrPawn
+		AGRSPlayerCharacter* GhostPawn = Cast<AGRSPlayerCharacter>(CurrentPossessedPawn);
+		if (!GhostPawn)
+		{
+			return;
+		}
+
+		// At first, unpossess previous controller
+		PlayerController->UnPossess();
+		PlayerController->Possess(MainPlayerPawn);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerController is %s"), __LINE__, __FUNCTION__, PlayerController ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- MainPlayerPawn is %s"), __LINE__, __FUNCTION__, MainPlayerPawn ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- PlayerCharacter: %s"), __LINE__, __FUNCTION__, *GetNameSafe(MainPlayerPawn));
+
+	// --- reset player character reference
+	MainPlayerPawn = nullptr;
+}
+
+// Disables current enhanced input and input bindings
+void UGRSPlayerControllerComponent::DisableInputs()
 {
 	const ABmrPlayerController* PlayerController = GetPlayerController();
 	if (!PlayerController)
@@ -80,11 +133,26 @@ void UGRSPlayerControllerComponent::PerformCleanUp()
 		return;
 	}
 
+	// -- disable inputs
 	if (const UGRSDataAsset* DataAsset = UDalSubsystem::GetDataAsset<UGRSDataAsset>())
 	{
 		const UBmrInputMappingContext* InputContext = DataAsset->GetInputContext();
 		UInputUtilsLibrary::UnbindInputActionsInContext(PlayerController, InputContext);
 		UInputUtilsLibrary::SetInputContextEnabled(PlayerController, false, InputContext);
+	}
+}
+
+// Store reference for possessed player pawn. Used to Unpossess controller back to the pawn
+void UGRSPlayerControllerComponent::SetPossessedPlayerPawn(APawn* PlayerPawn)
+{
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	if (MainPlayerPawn != PlayerPawn)
+	{
+		MainPlayerPawn = PlayerPawn;
 	}
 }
 
@@ -272,7 +340,7 @@ void UGRSPlayerControllerComponent::PredictProjectilePath(FPredictProjectilePath
 	const float SideSign = UGhostRevengeUtils::GetCharacterSideFromActor(Cast<AActor>(&GetCurrentPawnChecked())) == EGRSCharacterSide::Left ? 1.0f : -1.0f;
 
 	Params.LaunchVelocity = FVector(UpRight45.X + SideSign * (LaunchVelocity.X * CurrentHoldTimeInternal), LaunchVelocity.Y, UpRight45.Z + LaunchVelocity.Z);
-	Params.ActorsToIgnore.Add(GetCurrentGhostCharacter());
+	Params.ActorsToIgnore.Add(GetCurrentPawn());
 
 	UGameplayStatics::PredictProjectilePath(GetWorld(), Params, PredictResult);
 }
