@@ -64,13 +64,14 @@ void UGrsPawnComponent::OnUnregister()
 {
 	UGRSWorldSubSystem::Get().UnRegisterPawnComponent(this);
 
-	if (GrsPawnPoolManagerHandlers.Num() > 0)
+	UPoolManagerSubsystem* PoolManager = UPoolManagerSubsystem::GetPoolManager();
+	if (PoolManager
+	    && !GrsPawnPoolManagerHandlers.IsEmpty())
 	{
 		for (FPoolObjectHandle GrsPoolObjectHandle : GrsPawnPoolManagerHandlers)
 		{
-			const FPoolObjectData& SpawnObject = UPoolManagerSubsystem::Get().FindPoolObjectByHandle(GrsPoolObjectHandle);
-			AGRSPlayerCharacter* GhostCharacter = &SpawnObject.GetChecked<AGRSPlayerCharacter>();
-			if (GhostCharacter)
+			const FPoolObjectData& SpawnObject = PoolManager->FindPoolObjectByHandle(GrsPoolObjectHandle);
+			if (AGRSPlayerCharacter* GhostCharacter = SpawnObject.Get<AGRSPlayerCharacter>())
 			{
 				GhostCharacter->PerformCleanUp();
 				GhostCharacter->ConditionalBeginDestroy();
@@ -78,17 +79,11 @@ void UGrsPawnComponent::OnUnregister()
 
 			if (SpawnObject.IsValid())
 			{
-				UPoolManagerSubsystem::Get().ReturnToPool(GrsPoolObjectHandle);
+				PoolManager->ReturnToPool(GrsPoolObjectHandle);
 			}
 		}
 
 		GrsPawnPoolManagerHandlers.Empty();
-
-		FPoolObjectHandle GrsObjectHandle = UPoolManagerSubsystem::Get().FindPoolHandleByObject(AGRSPlayerCharacter::StaticClass());
-		if (GrsObjectHandle.IsValid())
-		{
-			UPoolManagerSubsystem::Get().EmptyPool(AGRSPlayerCharacter::StaticClass());
-		}
 	}
 
 	Super::OnUnregister();
