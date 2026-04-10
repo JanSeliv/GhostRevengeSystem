@@ -313,6 +313,7 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 	TryPossessController(PlayerController);
 	// --- set pawn location (side)
 	SetPawnSide();
+	GetMeshChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// --- clients calls:
 	// --- change visibility for this character
@@ -341,25 +342,26 @@ void AGRSPlayerCharacter::OnPreRemovedFromLevel_Implementation(class UBmrMapComp
 		return;
 	}
 
-	const APawn* Causer = DestroyCauserPlayerState->GetPawn();
+	APawn* Causer = DestroyCauserPlayerState->GetPawn();
 	if (!Causer)
 	{
 		return;
 	}
 
 	// --- ghost eliminates a player - remove ghost from map
-	const AGRSPlayerCharacter* GRSCharacter = Cast<AGRSPlayerCharacter>(Causer);
-	if (GRSCharacter && GRSCharacter == this)
+	AGRSPlayerCharacter* GRSCharacter = Cast<AGRSPlayerCharacter>(Causer);
+	if (GRSCharacter)
 	{
-		OnGhostEliminatesPlayer.Broadcast(PlayerCharacter->GetActorLocation(), this);
-		UE_LOG(LogTemp, Log, TEXT("[%i] %hs: --- OnGhostEliminatesPlayer.Broadcast"), __LINE__, __FUNCTION__);
-		RemoveGhostCharacterFromMap();
-		UGRSWorldSubSystem::Get().SetRevivedPlayer(PlayerCharacter);
-		UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->RevivePlayerCharacter(PlayerCharacter);
+		GRSCharacter->RemoveGhostCharacterFromMap();
+		if (GRSCharacter->GetController() && GRSCharacter->GetController()->HasAuthority())
+		{
+			GRSCharacter->GetController()->UnPossess();
+			UGRSWorldSubSystem::Get().GetPlayerStateComponent(GRSCharacter->GetPlayerID())->RevivePlayerCharacter(PlayerCharacter);
+		}
 	}
 
 	// --- a player was eliminated - activate ghost character
-	if (DestroyCauserPlayerState->GetPlayerId() == PlayerID)
+	if (PlayerCharacter->GetPlayerId() == PlayerID)
 	{
 		TryActivateGhostCharacter(this, PlayerCharacter);
 	}
@@ -506,7 +508,7 @@ void AGRSPlayerCharacter::SetPawnSide()
 	}
 
 	// Match the Z axis to what we have on the level
-	ActorSpawnLocation.Location.Z = 100.0f;
+	//ActorSpawnLocation.Location.Z = 100.0f;
 	SetActorLocation(ActorSpawnLocation);
 }
 

@@ -135,6 +135,7 @@ void UGrsPawnComponent::OnTakeActorsFromPoolCompleted(const TArray<FPoolObjectDa
 		ActorSpawnLocation = UBmrCellUtilsLibrary::GetCellByCornerOnLevel(EBmrGridCorner::TopLeft);
 		ActorSpawnLocation.Location.X = ActorSpawnLocation.Location.X - CellSize;
 		ActorSpawnLocation.Location.Y = ActorSpawnLocation.Location.Y + (CellSize / 2); // temporary, debug row
+		ActorSpawnLocation.Location.Z = GetBmrPawn()->GetActorLocation().Z; // temporary, debug row
 
 		GhostCharacter.SetActorLocation(ActorSpawnLocation);
 	}

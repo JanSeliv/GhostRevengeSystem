@@ -67,7 +67,7 @@ void UGRSPlayerControllerComponent::BeginPlay()
 // Clears all transient data created by this component
 void UGRSPlayerControllerComponent::OnUnregister()
 {
-	DisableInputs();
+	DisableGhostInputs();
 	// --- unpossess back to a pawn
 	UnpossessGhostPawn();
 
@@ -125,7 +125,7 @@ void UGRSPlayerControllerComponent::UnpossessGhostPawn()
 }
 
 // Disables current enhanced input and input bindings
-void UGRSPlayerControllerComponent::DisableInputs()
+void UGRSPlayerControllerComponent::DisableGhostInputs()
 {
 	const ABmrPlayerController* PlayerController = GetPlayerController();
 	if (!PlayerController)
@@ -182,7 +182,9 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 		AGRSPlayerCharacter* GhostCharacter = Cast<AGRSPlayerCharacter>(OldPawn);
 		if (GhostCharacter)
 		{
-			SetManagedInputContextEnabled(GetPlayerController(), false);
+			UnpossessGhostPawn();
+			DisableGhostInputs();
+			// SetManagedInputContextEnabled(GetPlayerController(), false);
 		}
 	}
 }

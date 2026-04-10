@@ -84,11 +84,6 @@ void UGhostRevengeCollisionComponent::OnLocalPawnReady_Implementation(const FGam
 // The spawner is considered as loaded only when the subsystem is loaded
 void UGhostRevengeCollisionComponent::OnInitialize(const struct FGameplayEventData& Payload)
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		return;
-	}
-
 	// spawn collisions only once
 	if (!UGRSWorldSubSystem::Get().IsCollisionsSpawned())
 	{
@@ -97,14 +92,8 @@ void UGhostRevengeCollisionComponent::OnInitialize(const struct FGameplayEventDa
 }
 
 //  Spawn a collision box the side of the map
-void UGhostRevengeCollisionComponent::SpawnMapCollisionOnSide_Implementation()
+void UGhostRevengeCollisionComponent::SpawnMapCollisionOnSide()
 {
-	// --- Only server can spawn character and posses it
-	if (!GetOwner()->HasAuthority())
-	{
-		return;
-	}
-
 	// --- Prepare spawn request
 	const TWeakObjectPtr<ThisClass> WeakThis = this;
 	const FOnSpawnAllCallback OnTakeActorsFromPoolCompleted = [WeakThis](const TArray<FPoolObjectData>& CreatedObjects)

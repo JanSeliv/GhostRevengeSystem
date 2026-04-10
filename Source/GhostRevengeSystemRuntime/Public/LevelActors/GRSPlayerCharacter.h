@@ -44,7 +44,6 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostAddedToLevel);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostPossesController_Client);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGhostPossesController_Server);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGhostEliminatesPlayer, FVector, AtLocation, AGRSPlayerCharacter*, GhostCharacter);
 
 	/** Is called when a ghost character added to level without possession */
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
@@ -57,10 +56,6 @@ public:
 	/** Is called when a ghost character is added to level and possessed a controller on server*/
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
 	FOnGhostPossesController_Server OnGhostPossesController_Server;
-
-	/** Is called when a ghost characters kills another player */
-	UPROPERTY(BlueprintCallable, BlueprintAssignable, Transient, Category = "[GhostRevengeSystem]")
-	FOnGhostEliminatesPlayer OnGhostEliminatesPlayer;
 
 	/*********************************************************************************************
 	 * Initialization
@@ -122,6 +117,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void RegisterPawnComponent(class UGrsPawnComponent* NewPawnComponent);
 
+	/** Remove ghost character from the level */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
+	void RemoveGhostCharacterFromMap();
+
 protected:
 	/** Called when the game starts or when spawned (on spawned on the level) */
 	virtual void BeginPlay() override;
@@ -157,10 +156,6 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnPreRemovedFromLevel(class UBmrMapComponent* PlayerMapComponent, class UObject* DestroyCauser);
 
-	/** Remove ghost character from the level */
-	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
-	void RemoveGhostCharacterFromMap();
-
 	/*********************************************************************************************
 	 * Player Character
 	 **********************************************************************************************/
@@ -173,6 +168,10 @@ public:
 	/** Called on client when player ID is changed. */
 	UFUNCTION()
 	void OnRep_PlayerID();
+
+	/**Returns current replicated player ID */
+	UFUNCTION()
+	FORCEINLINE int32 GetPlayerID() { return PlayerID; }
 
 	/*********************************************************************************************
 	 * Utils

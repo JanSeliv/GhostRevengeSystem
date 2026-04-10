@@ -139,6 +139,8 @@ void UGrsPlayerStateComponent::RevivePlayerCharacter(ABmrPawn* PlayerCharacter)
 	FGameplayEventData EventData;
 	EventData.EventMagnitude = UBmrCellUtilsLibrary::GetIndexByCellOnLevel(PlayerCharacter->GetActorLocation());
 	ASC->HandleGameplayEvent(UGRSDataAsset::Get().GetReviePlayerCharacterTriggerTag(), &EventData);
+	
+	UGRSWorldSubSystem::Get().SetRevivedPlayer(PlayerCharacter);
 }
 
 // Grant to a player revive GAS effect

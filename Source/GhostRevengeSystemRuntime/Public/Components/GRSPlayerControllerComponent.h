@@ -47,14 +47,14 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected))
 	void OnGameStateChanged(const struct FGameplayEventData& Payload);
 
+public:
 	/** Unpossess current pawn from ghost to BmwPlayerPawn */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, AutoCreateRefTerm = "ActionValue"))
 	void UnpossessGhostPawn();
 
-public:
 	/** Disables current enhanced input and input bindings */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
-	void DisableInputs();
+	void DisableGhostInputs();
 
 	/*********************************************************************************************
 	 * Player Character

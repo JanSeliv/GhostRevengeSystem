@@ -47,7 +47,7 @@ protected:
 	void OnInitialize(const struct FGameplayEventData& Payload);
 
 	/** Spawn a collision box the side of the map */
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "[GhostRevengeSystem]")
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void SpawnMapCollisionOnSide();
 
 	/** Grabs a side collision asset from the pool manager (Object pooling patter)
