@@ -246,7 +246,7 @@ void AGRSPlayerCharacter::OnInitialize(const struct FGameplayEventData& Payload)
 
 	// --- Init character visuals (animations, skin)
 	SetCharacterVisual(&UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked());
-
+	SetVisibility(false);
 	// --- ghost added to level
 	OnGhostAddedToLevel.Broadcast();
 }
@@ -308,21 +308,24 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 		return;
 	}
 	GrsControllerComponent->SetPossessedPlayerPawn(FromPlayerCharacter);
-
-	// --- authority calls:
-	TryPossessController(PlayerController);
-	// --- set pawn location (side)
-	SetPawnSide();
+	
 	GetMeshChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	SetVisibility(true);
 
 	// --- clients calls:
-	// --- change visibility for this character
 	// --- update collision settings
 	// --- activate arrow
 
 	// --- just refresh visibility of player name needed, to be changed. Player name to be set by default
 	// ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
 	// UpdatePlayerName(BmrPlayerState);
+	
+	// --- authority calls:
+	TryPossessController(PlayerController);
+	
+	// --- set pawn location (side)
+	SetPawnSide();
+	
 }
 
 // Called right before owner actor going to remove from the Generated Map, on both server and clients.

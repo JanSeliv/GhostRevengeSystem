@@ -173,6 +173,7 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 
 			// --- Clear splines
 			GhostCharacter->ClearTrajectorySplines();
+			GhostCharacter->SetVisibility(true);
 		}
 	}
 
@@ -184,6 +185,7 @@ void UGRSPlayerControllerComponent::OnPossessedPawnChanged_Implementation(APawn*
 		{
 			UnpossessGhostPawn();
 			DisableGhostInputs();
+			GhostCharacter->SetVisibility(false);
 			// SetManagedInputContextEnabled(GetPlayerController(), false);
 		}
 	}
