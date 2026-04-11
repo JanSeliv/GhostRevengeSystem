@@ -508,7 +508,7 @@ void AGRSPlayerCharacter::SetPawnSide()
 	}
 
 	// Match the Z axis to what we have on the level
-	//ActorSpawnLocation.Location.Z = 100.0f;
+	ActorSpawnLocation.Location.Z = 100.0f;
 	SetActorLocation(ActorSpawnLocation);
 }
 
