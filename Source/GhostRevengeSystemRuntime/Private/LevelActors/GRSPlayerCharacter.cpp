@@ -8,6 +8,7 @@
 #include "Actors/BmrPawn.h"
 #include "Animation/AnimInstance.h"
 #include "Components/BmrMapComponent.h"
+#include "Components/BmrPlayerArrowStartComponent.h"
 #include "Components/BmrPlayerNameWidgetComponent.h"
 #include "Components/BmrSkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -79,6 +80,9 @@ AGRSPlayerCharacter::AGRSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	ProjectileSplineComponentInternal = CreateDefaultSubobject<USplineComponent>(TEXT("ProjectileSplineComponent"));
 	ProjectileSplineComponentInternal->AttachToComponent(MeshComponentInternal, FAttachmentTransformRules::KeepRelativeTransform);
 
+	PlayerArrowStartComponent = CreateDefaultSubobject<UBmrPlayerArrowStartComponent>(TEXT("PlayerArrowStartWidgetComponent"));
+	PlayerArrowStartComponent->SetupAttachment(RootComponent);
+
 	AimingSphereComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereComp"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	if (SphereMesh.Succeeded())
@@ -90,7 +94,7 @@ AGRSPlayerCharacter::AGRSPlayerCharacter(const FObjectInitializer& ObjectInitial
 // Set default character parameters such as bCanEverTick, bStartWithTickEnabled, replication etc.
 void AGRSPlayerCharacter::SetDefaultParams()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	// Replicate an actor
@@ -202,6 +206,77 @@ void AGRSPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	PerformCleanUp();
 	Super::EndPlay(EndPlayReason);
+}
+
+// APawn Interface when this pawn was possessed by a new controller
+void AGRSPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	bool isReady = bIsReady();
+	if (!isReady)
+	{
+		return;
+	}
+
+	RefreshPawn();
+	
+}
+
+// APawn Interface when this pawn was replicated by a new controller
+void AGRSPlayerCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+	
+	bool isReady = bIsReady();
+	if (!isReady)
+	{
+		return;
+	}
+
+	RefreshPawn();
+
+	
+}
+
+//  APawn Interface when this pawn was replicated by a new player state
+void AGRSPlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	bool isReady = bIsReady();
+	if (!isReady)
+	{
+		return;
+	}
+
+	RefreshPawn();
+
+	
+}
+
+// Refresh the pawn visuals
+void AGRSPlayerCharacter::RefreshPawn()
+{
+	// --- Clear splines
+	ClearTrajectorySplines();
+	SetVisibility(true);
+	SetArrowEnabled(true);
+}
+
+// Checks if Pawn is replicated fully (player state and controller present
+bool AGRSPlayerCharacter::bIsReady()
+{
+	return GetController() || GetPlayerState();
+}
+
+// APawn Interface when this pawn was unpossessed
+void AGRSPlayerCharacter::UnPossessed()
+{
+	SetVisibility(false);
+	SetArrowEnabled(false);
+
+	Super::UnPossessed();
 }
 
 // Returns the Ability System Component from the Player State
@@ -410,6 +485,12 @@ UBmrSkeletalMeshComponent& AGRSPlayerCharacter::GetMeshChecked() const
 void AGRSPlayerCharacter::SetVisibility(bool Visibility)
 {
 	GetMesh()->SetVisibility(Visibility, true);
+}
+
+// Set visibility of the arrow on top of player character
+void AGRSPlayerCharacter::SetArrowEnabled(bool bVisibility)
+{
+	PlayerArrowStartComponent->SetArrowEnabled(bVisibility);
 }
 
 //  Set character visual once added to the level from a refence character (visuals, animations)

@@ -9,6 +9,7 @@
 #include "GrsGameplayTags.h"
 #include "LevelActors/GRSPlayerCharacter.h"
 #include "PoolManagerSubsystem.h"
+#include "Data/GRSDataAsset.h"
 #include "Structures/BmrGameplayTags.h"
 #include "SubSystems/GRSWorldSubSystem.h"
 #include "Subsystems/GlobalMessageSubsystem.h"
@@ -114,7 +115,7 @@ void UGrsPawnComponent::AddGhostCharacter()
 	};
 
 	// --- Spawn actor
-	UPoolManagerSubsystem::Get().TakeFromPoolArray(GrsPawnPoolManagerHandlers, AGRSPlayerCharacter::StaticClass(), 1, OnTakeActorsFromPoolCompleted, ESpawnRequestPriority::High);
+	UPoolManagerSubsystem::Get().TakeFromPoolArray(GrsPawnPoolManagerHandlers, UGRSDataAsset::Get().GetGrsActorClass(), 1, OnTakeActorsFromPoolCompleted, ESpawnRequestPriority::High);
 }
 
 //  Grabs a Ghost Revenge Player Character from the pool manager (Object pooling patter)

@@ -98,6 +98,19 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Player Name 3D Widget Component"))
 	TObjectPtr<class UBmrPlayerNameWidgetComponent> PlayerName3DWidgetComponentInternal = nullptr;
 
+	/*********************************************************************************************
+	 * Arrow component
+	 **********************************************************************************************/
+public:
+	/** Returns static mesh component that displays the arrow above the local player during match start. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "[Bomber]")
+	FORCEINLINE class UBmrPlayerArrowStartComponent* GetPlayerArrowStartWidgetComponent() const { return PlayerArrowStartComponent; }
+
+protected:
+	/** Static mesh component that displays the arrow above the local player during match start. */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "[Bomber]", meta = (BlueprintProtected))
+	TObjectPtr<class UBmrPlayerArrowStartComponent> PlayerArrowStartComponent = nullptr;
+
 	/** A GrsPawnComponent that spawned this pawn */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Transient, Category = "[GhostRevengeSystem]", meta = (BlueprintProtected, DisplayName = "Owning Grs Pawn Component"))
 	class UGrsPawnComponent* OwningPawnComponent = nullptr;
@@ -127,6 +140,26 @@ protected:
 
 	/** Overridable function called whenever this actor is being removed from a level. */
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	/** APawn Interface when this pawn was possessed by a new controller */
+	virtual void PossessedBy(AController* NewController) override;
+
+	/** APawn Interface when this pawn was replicated by a new controller */
+	virtual void OnRep_Controller() override;
+	
+	/** APawn Interface when this pawn was replicated by a new player state */
+	virtual void OnRep_PlayerState() override;
+	
+	/** Refresh the pawn visuals  */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	void RefreshPawn();
+	
+	/** Checks if Pawn is replicated fully (player state and controller present */
+	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
+	bool bIsReady();
+
+	/** APawn Interface when this pawn was unpossessed */
+	virtual void UnPossessed() override;
 
 	/** Returns the Ability System Component from the Player State.
 	 * In blueprints, call 'Get Ability System Component' as interface function. */
@@ -182,6 +215,9 @@ public:
 
 	/** Set visibility of the player character */
 	void SetVisibility(bool Visibility);
+
+	/** Set visibility of the arrow on top of player character */
+	void SetArrowEnabled(bool bVisibility);
 
 	/** Set character visual once added to the level from a refence character (visuals, animations) */
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
