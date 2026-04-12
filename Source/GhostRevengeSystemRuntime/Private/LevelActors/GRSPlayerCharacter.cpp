@@ -33,7 +33,6 @@
 #include "Subsystems/GlobalMessageSubsystem.h"
 #include "UI/Widgets/BmrPlayerNameWidget.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UtilityLibraries/BmrBlueprintFunctionLibrary.h"
 #include "UtilityLibraries/BmrCellUtilsLibrary.h"
 
 /*********************************************************************************************
@@ -308,7 +307,7 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 		return;
 	}
 	GrsControllerComponent->SetPossessedPlayerPawn(FromPlayerCharacter);
-	
+
 	GetMeshChecked().SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	SetVisibility(true);
 
@@ -319,13 +318,12 @@ void AGRSPlayerCharacter::TryActivateGhostCharacter(AGRSPlayerCharacter* GhostCh
 	// --- just refresh visibility of player name needed, to be changed. Player name to be set by default
 	// ABmrPlayerState* BmrPlayerState = Cast<ABmrPlayerState>(FromPlayerCharacter->GetPlayerState());
 	// UpdatePlayerName(BmrPlayerState);
-	
+
 	// --- authority calls:
 	TryPossessController(PlayerController);
-	
+
 	// --- set pawn location (side)
 	SetPawnSide();
-	
 }
 
 // Called right before owner actor going to remove from the Generated Map, on both server and clients.
@@ -443,15 +441,13 @@ void AGRSPlayerCharacter::SetCharacterVisual(const ABmrPawn* PlayerCharacter)
 }
 
 // Set and apply skeletal mesh for ghost player. Copy mesh from current player
-void AGRSPlayerCharacter::SetPlayerMeshData(bool bForcePlayerSkin /* = false*/)
+void AGRSPlayerCharacter::SetPlayerMeshData()
 {
-	ABmrPawn* PlayerCharacter = &UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked();
+	const ABmrPawn* PlayerCharacter = &UGRSWorldSubSystem::Get().GetPlayerStateComponent(PlayerID)->GetCurrentPlayerStateChecked()->GetPawnChecked();
 	checkf(PlayerCharacter, TEXT("ERROR: [%i] %hs:\n'PlayerCharacter' is null!"), __LINE__, __FUNCTION__);
 
-	const EBmrLevelType PlayerFlag = UBmrBlueprintFunctionLibrary::GetLevelType();
-
-	const FBmrPlayerRow* Row = FBmrPlayerRow::GetRowByLevelType(PlayerFlag);
-	const FName RowName = FBmrPlayerRow::GetRowNameByLevelType(PlayerFlag);
+	const FBmrPlayerRow* Row = FBmrPlayerRow::GetFirstRow();
+	const FName RowName = FBmrPlayerRow::GetFirstRowName();
 	if (!ensureMsgf(Row, TEXT("ASSERT: [%i] %hs:\n'Row' is not found!"), __LINE__, __FUNCTION__))
 	{
 		return;
