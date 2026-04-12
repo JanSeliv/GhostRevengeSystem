@@ -187,10 +187,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "[GhostRevengeSystem]")
 	void SetCharacterVisual(const ABmrPawn* PlayerCharacter);
 
-	/** Set and apply skeletal mesh for ghost player. Copy mesh from current player
-	 * @param bForcePlayerSkin If true, will force the bot to change own skin to look like a player. */
+	/** Set and apply skeletal mesh for ghost player. Copy mesh from current player. */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "[GhostRevengeSystem]")
-	void SetPlayerMeshData(bool bForcePlayerSkin = false);
+	void SetPlayerMeshData();
 
 protected:
 	/** Possess a player controller */
